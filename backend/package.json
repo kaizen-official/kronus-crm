@@ -1,0 +1,42 @@
+{
+  "name": "kronus-crm",
+  "version": "0.1.0",
+  "description": "This is official CRM of Kronus Infratech and Consultants developed by Kaizen",
+  "homepage": "https://github.com/kaizen-official/kronus-crm-backend#readme",
+  "bugs": {
+    "url": "https://github.com/kaizen-official/kronus-crm-backend/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kaizen-official/kronus-crm-backend.git"
+  },
+  "license": "ISC",
+  "author": "Kaizen",
+  "type": "commonjs",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "nodemon src/index.js",
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "seed": "node prisma/seed.mjs"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.mjs"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^10.1.0",
+    "@prisma/client": "^6.19.1",
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
+    "express-validator": "^7.3.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "^7.0.0",
+    "nodemailer": "^7.0.11",
+    "nodemon": "^3.1.11",
+    "prisma": "^6.19.1"
+  }
+}

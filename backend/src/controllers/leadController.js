@@ -1,0 +1,574 @@
+const prisma = require('../config/database');
+const { HTTP_STATUS, ROLES } = require('../config/constants');
+
+/**
+ * @desc    Get all leads (with pagination, search, and filters)
+ * @route   GET /api/leads
+ * @access  Private
+ */
+const getLeads = async (req, res, next) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
+      status,
+      priority,
+      source,
+      assignedToId,
+      createdById,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      startDate,
+      endDate,
+    } = req.query;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Build where clause
+    const where = {
+      ...(search && {
+        OR: [
+          { firstName: { contains: search, mode: 'insensitive' } },
+          { lastName: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+          { company: { contains: search, mode: 'insensitive' } },
+          { phone: { contains: search, mode: 'insensitive' } },
+        ],
+      }),
+      ...(status && { status }),
+      ...(priority && { priority }),
+      ...(source && { source }),
+      ...(assignedToId && { assignedToId }),
+      ...(createdById && { createdById }),
+      ...(startDate && endDate && {
+        createdAt: {
+          gte: new Date(startDate),
+          lte: new Date(endDate),
+        },
+      }),
+    };
+
+    // Non-admin users can only see their created or assigned leads
+    if (req.user.role !== ROLES.SUPER_ADMIN && req.user.role !== ROLES.ADMIN) {
+      where.OR = [
+        { createdById: req.user.id },
+        { assignedToId: req.user.id },
+      ];
+    }
+
+    // Get leads with pagination
+    const [leads, total] = await Promise.all([
+      prisma.lead.findMany({
+        where,
+        skip,
+        take: parseInt(limit),
+        orderBy: { [sortBy]: sortOrder },
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          assignedTo: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          _count: {
+            select: {
+              activities: true,
+            },
+          },
+        },
+      }),
+      prisma.lead.count({ where }),
+    ]);
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: {
+        leads,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(total / parseInt(limit)),
+          totalItems: total,
+          itemsPerPage: parseInt(limit),
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get single lead by ID
+ * @route   GET /api/leads/:id
+ * @access  Private
+ */
+const getLeadById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const lead = await prisma.lead.findUnique({
+      where: { id },
+      include: {
+        createdBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        assignedTo: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        activities: {
+          orderBy: { date: 'desc' },
+          take: 10,
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!lead) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        message: 'Lead not found',
+      });
+    }
+
+    // Check access permission
+    if (
+      req.user.role !== ROLES.SUPER_ADMIN &&
+      req.user.role !== ROLES.ADMIN &&
+      lead.createdById !== req.user.id &&
+      lead.assignedToId !== req.user.id
+    ) {
+      return res.status(HTTP_STATUS.FORBIDDEN).json({
+        success: false,
+        message: 'You do not have permission to access this lead',
+      });
+    }
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: lead,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Create new lead
+ * @route   POST /api/leads
+ * @access  Private
+ */
+const createLead = async (req, res, next) => {
+  try {
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      company,
+      position,
+      source,
+      status,
+      priority,
+      estimatedValue,
+      notes,
+      address,
+      city,
+      state,
+      country,
+      zipCode,
+      assignedToId,
+    } = req.body;
+
+    // If assignedToId is provided, verify the user exists
+    if (assignedToId) {
+      const assignedUser = await prisma.user.findUnique({
+        where: { id: assignedToId },
+      });
+
+      if (!assignedUser) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message: 'Assigned user not found',
+        });
+      }
+    }
+
+    const lead = await prisma.lead.create({
+      data: {
+        firstName,
+        lastName,
+        email,
+        phone,
+        company: company || null,
+        position: position || null,
+        source: source || 'WEBSITE',
+        status: status || 'NEW',
+        priority: priority || 'MEDIUM',
+        estimatedValue: estimatedValue || null,
+        notes: notes || null,
+        address: address || null,
+        city: city || null,
+        state: state || null,
+        country: country || null,
+        zipCode: zipCode || null,
+        createdById: req.user.id,
+        assignedToId: assignedToId || null,
+      },
+      include: {
+        createdBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        assignedTo: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    // Create activity for lead creation
+    await prisma.activity.create({
+      data: {
+        type: 'NOTE',
+        title: 'Lead Created',
+        description: `Lead created by ${req.user.firstName} ${req.user.lastName}`,
+        userId: req.user.id,
+        leadId: lead.id,
+      },
+    });
+
+    res.status(HTTP_STATUS.CREATED).json({
+      success: true,
+      message: 'Lead created successfully',
+      data: lead,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Update lead
+ * @route   PUT /api/leads/:id
+ * @access  Private
+ */
+const updateLead = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    // Check if lead exists
+    const existingLead = await prisma.lead.findUnique({
+      where: { id },
+    });
+
+    if (!existingLead) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        message: 'Lead not found',
+      });
+    }
+
+    // Check access permission
+    if (
+      req.user.role !== ROLES.SUPER_ADMIN &&
+      req.user.role !== ROLES.ADMIN &&
+      existingLead.createdById !== req.user.id &&
+      existingLead.assignedToId !== req.user.id
+    ) {
+      return res.status(HTTP_STATUS.FORBIDDEN).json({
+        success: false,
+        message: 'You do not have permission to update this lead',
+      });
+    }
+
+    // If assignedToId is being updated, verify the user exists
+    if (updateData.assignedToId) {
+      const assignedUser = await prisma.user.findUnique({
+        where: { id: updateData.assignedToId },
+      });
+
+      if (!assignedUser) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message: 'Assigned user not found',
+        });
+      }
+    }
+
+    // Update lead
+    const lead = await prisma.lead.update({
+      where: { id },
+      data: updateData,
+      include: {
+        createdBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        assignedTo: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    // Create activity for lead update
+    await prisma.activity.create({
+      data: {
+        type: 'NOTE',
+        title: 'Lead Updated',
+        description: `Lead updated by ${req.user.firstName} ${req.user.lastName}`,
+        userId: req.user.id,
+        leadId: lead.id,
+      },
+    });
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: 'Lead updated successfully',
+      data: lead,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Delete lead
+ * @route   DELETE /api/leads/:id
+ * @access  Private (Admin only)
+ */
+const deleteLead = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const lead = await prisma.lead.findUnique({
+      where: { id },
+    });
+
+    if (!lead) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        message: 'Lead not found',
+      });
+    }
+
+    // Delete lead and related activities (cascade)
+    await prisma.lead.delete({
+      where: { id },
+    });
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: 'Lead deleted successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get lead statistics
+ * @route   GET /api/leads/stats
+ * @access  Private
+ */
+const getLeadStats = async (req, res, next) => {
+  try {
+    const where = {};
+
+    // Non-admin users can only see their stats
+    if (req.user.role !== ROLES.SUPER_ADMIN && req.user.role !== ROLES.ADMIN) {
+      where.OR = [
+        { createdById: req.user.id },
+        { assignedToId: req.user.id },
+      ];
+    }
+
+    const [
+      totalLeads,
+      leadsByStatus,
+      leadsByPriority,
+      leadsBySource,
+      totalEstimatedValue,
+    ] = await Promise.all([
+      prisma.lead.count({ where }),
+      prisma.lead.groupBy({
+        by: ['status'],
+        _count: true,
+        where,
+      }),
+      prisma.lead.groupBy({
+        by: ['priority'],
+        _count: true,
+        where,
+      }),
+      prisma.lead.groupBy({
+        by: ['source'],
+        _count: true,
+        where,
+      }),
+      prisma.lead.aggregate({
+        _sum: {
+          estimatedValue: true,
+        },
+        where,
+      }),
+    ]);
+
+    const statusStats = leadsByStatus.reduce((acc, curr) => {
+      acc[curr.status] = curr._count;
+      return acc;
+    }, {});
+
+    const priorityStats = leadsByPriority.reduce((acc, curr) => {
+      acc[curr.priority] = curr._count;
+      return acc;
+    }, {});
+
+    const sourceStats = leadsBySource.reduce((acc, curr) => {
+      acc[curr.source] = curr._count;
+      return acc;
+    }, {});
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      data: {
+        totalLeads,
+        totalEstimatedValue: totalEstimatedValue._sum.estimatedValue || 0,
+        leadsByStatus: statusStats,
+        leadsByPriority: priorityStats,
+        leadsBySource: sourceStats,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Assign lead to user
+ * @route   PUT /api/leads/:id/assign
+ * @access  Private (Admin, Manager)
+ */
+const assignLead = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { assignedToId } = req.body;
+
+    const lead = await prisma.lead.findUnique({
+      where: { id },
+    });
+
+    if (!lead) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        message: 'Lead not found',
+      });
+    }
+
+    // Verify assigned user exists
+    if (assignedToId) {
+      const assignedUser = await prisma.user.findUnique({
+        where: { id: assignedToId },
+      });
+
+      if (!assignedUser) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message: 'Assigned user not found',
+        });
+      }
+    }
+
+    const updatedLead = await prisma.lead.update({
+      where: { id },
+      data: { assignedToId: assignedToId || null },
+      include: {
+        assignedTo: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    // Create activity
+    await prisma.activity.create({
+      data: {
+        type: 'NOTE',
+        title: 'Lead Assigned',
+        description: assignedToId
+          ? `Lead assigned to ${updatedLead.assignedTo.firstName} ${updatedLead.assignedTo.lastName}`
+          : 'Lead unassigned',
+        userId: req.user.id,
+        leadId: lead.id,
+      },
+    });
+
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      message: 'Lead assignment updated successfully',
+      data: updatedLead,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {
+  getLeads,
+  getLeadById,
+  createLead,
+  updateLead,
+  deleteLead,
+  getLeadStats,
+  assignLead,
+};
