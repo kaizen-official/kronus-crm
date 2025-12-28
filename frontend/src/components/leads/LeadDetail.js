@@ -97,7 +97,7 @@ export default function LeadDetail({ lead: initialLead, onLeadDeleted }) {
         }
     };
 
-    const isAdmin = user && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN');
+    const isAdmin = user && (user.roles || []).includes('ADMIN');
 
     if (!lead) return null;
 
@@ -106,7 +106,7 @@ export default function LeadDetail({ lead: initialLead, onLeadDeleted }) {
             {/* Header Info */}
             <div className="flex items-start justify-between">
                 <div>
-                    <Heading level={2} className="text-3xl! mb-1">{lead.firstName} {lead.lastName}</Heading>
+                    <Heading level={2} className="text-3xl! mb-1">{lead.name}</Heading>
                     <div className="flex items-center gap-4 text-gray-500">
                         {lead.property && (
                             <div className="flex items-center gap-1">
@@ -122,7 +122,7 @@ export default function LeadDetail({ lead: initialLead, onLeadDeleted }) {
                     <div>
                         <div className="text-sm text-gray-500 mb-1">Estimated Value</div>
                         <div className="text-2xl font-bold text-brand-primary">
-                            ₹{(lead.estimatedValue || 0).toLocaleString()}
+                            ₹{(lead.value || 0).toLocaleString()}
                         </div>
                     </div>
                     {isAdmin && (
@@ -141,12 +141,15 @@ export default function LeadDetail({ lead: initialLead, onLeadDeleted }) {
 
             {/* Grid Info */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <DetailItem label="Email" value={lead.email} icon={<HiMail />} isLink href={`mailto:${lead.email}`} />
+                <DetailItem label="Email" value={lead.email || "Not provided"} icon={<HiMail />} isLink={!!lead.email} href={lead.email ? `mailto:${lead.email}` : undefined} />
                 <DetailItem label="Phone" value={lead.phone} icon={<HiPhone />} isLink href={`tel:${lead.phone}`} />
                 <DetailItem label="Status" value={lead.status} badge />
                 <DetailItem label="Priority" value={lead.priority} badge color={lead.priority === 'URGENT' ? 'red' : 'blue'} />
-                <DetailItem label="Source" value={lead.source} />
+                <DetailItem label="Source" value={lead.source || "Not specified"} />
                 <DetailItem label="Assigned To" value={lead.assignedTo ? `${lead.assignedTo.firstName} ${lead.assignedTo.lastName}` : "Unassigned"} />
+                {lead.followUpDate && (
+                    <DetailItem label="Follow-up Date" value={new Date(lead.followUpDate).toLocaleDateString()} icon={<HiCalendar />} />
+                )}
             </div>
 
             {/* Attachments Section */}
@@ -379,7 +382,7 @@ export default function LeadDetail({ lead: initialLead, onLeadDeleted }) {
                             Delete Lead
                         </h3>
                         <p className="text-gray-600 mb-6">
-                            Are you sure you want to delete the lead for <span className="font-semibold">{lead.firstName} {lead.lastName}</span>? This will permanently delete:
+                            Are you sure you want to delete the lead for <span className="font-semibold">{lead.name}</span>? This will permanently delete:
                         </p>
                         <ul className="list-disc list-inside text-gray-600 mb-6 space-y-1 text-sm">
                             <li>All lead information</li>

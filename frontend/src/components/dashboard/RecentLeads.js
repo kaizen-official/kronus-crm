@@ -34,16 +34,16 @@ export default function RecentLeads({ leads }) {
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                         {leads.map((lead) => (
-                            <tr key={lead.id} className="group hover:bg-gray-50 transition-colors">
+                            <tr key={lead.id} className="group hover:bg-gray-50 transition-colors cursor-pointer">
                                 <td className="py-3 font-medium text-gray-900">
-                                    {lead.firstName} {lead.lastName}
+                                    {lead.name}
                                 </td>
                                 <td className="py-3 text-gray-600">{lead.property || "-"}</td>
                                 <td className="py-3">
                                     <StatusBadge status={lead.status} />
                                 </td>
                                 <td className="py-3 text-right font-medium text-gray-900">
-                                    ₹{(lead.estimatedValue || 0).toLocaleString()}
+                                    ₹{(lead.value || 0).toLocaleString()}
                                 </td>
                             </tr>
                         ))}
@@ -56,16 +56,20 @@ export default function RecentLeads({ leads }) {
 
 function StatusBadge({ status }) {
     const styles = {
-        NEW: "bg-blue-50 text-blue-700",
-        CONTACTED: "bg-purple-50 text-purple-700",
-        QUALIFIED: "bg-green-50 text-green-700",
-        LOST: "bg-red-50 text-red-700",
-        WON: "bg-yellow-50 text-yellow-700"
+        NEW: "bg-blue-100 text-blue-700",
+        CONTACTED: "bg-cyan-100 text-cyan-700",
+        INTERESTED: "bg-green-100 text-green-700",
+        NOT_INTERESTED: "bg-gray-100 text-gray-700",
+        SITE_VISIT: "bg-purple-100 text-purple-700",
+        NEGOTIATION: "bg-orange-100 text-orange-700",
+        DOCUMENTATION: "bg-indigo-100 text-indigo-700",
+        WON: "bg-emerald-100 text-emerald-700",
+        LOST: "bg-red-100 text-red-700"
     };
 
     return (
-        <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full ${styles[status] || "bg-gray-50 text-gray-700"}`}>
-            {status}
+        <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded ${styles[status] || "bg-gray-50 text-gray-700"}`}>
+            {status?.replace(/_/g, ' ')}
         </span>
     );
 }

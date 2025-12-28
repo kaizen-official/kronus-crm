@@ -4,15 +4,23 @@ const nodemailer = require('nodemailer');
  * Create email transporter
  */
 const createTransporter = () => {
-  return nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: process.env.EMAIL_PORT,
-    secure: false, // true for 465, false for other ports
+  const config = {
     auth: {
       user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD,
+      pass: process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS,
     },
-  });
+  };
+
+  // If using Gmail, 'service' is more reliable than manual host/port
+  if (process.env.EMAIL_USER?.endsWith('@gmail.com') || process.env.EMAIL_HOST?.includes('google')) {
+    config.service = 'gmail';
+  } else {
+    config.host = process.env.EMAIL_HOST;
+    config.port = process.env.EMAIL_PORT;
+    config.secure = process.env.EMAIL_PORT == 465;
+  }
+
+  return nodemailer.createTransport(config);
 };
 
 /**
@@ -23,7 +31,7 @@ const sendEmail = async (options) => {
   const transporter = createTransporter();
 
   const message = {
-    from: `${options.fromName || 'Kronus CRM'} <${process.env.EMAIL_FROM}>`,
+    from: `${options.fromName || 'Kronus CRM'} <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
     to: options.email,
     subject: options.subject,
     html: options.html,
@@ -41,99 +49,133 @@ const sendEmail = async (options) => {
 };
 
 /**
- * Send password reset email
+ * Base template for emails
  */
-const sendPasswordResetEmail = async (email, resetUrl, firstName) => {
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #4CAF50; color: white; padding: 20px; text-align: center; }
-        .content { padding: 20px; background: #f9f9f9; }
-        .button { display: inline-block; padding: 12px 24px; background: #4CAF50; color: white; text-decoration: none; border-radius: 4px; margin: 20px 0; }
-        .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
-      </style>
-    </head>
-    <body>
+const baseTemplate = (content, title) => `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <style>
+      body { margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; color: #1e293b; }
+      .wrapper { width: 100%; padding: 40px 0; }
+      .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+      .header { background: #4f46e5; padding: 32px; text-align: center; }
+      .logo { color: #ffffff; font-size: 24px; font-weight: 800; letter-spacing: -0.025em; margin: 0; text-transform: uppercase; }
+      .content { padding: 40px; line-height: 1.6; }
+      h1 { font-size: 24px; font-weight: 700; color: #1e293b; margin-top: 0; margin-bottom: 16px; }
+      p { margin-bottom: 20px; font-size: 16px; color: #475569; }
+      .button { display: inline-block; background: #4f46e5; color: #ffffff !important; padding: 14px 28px; border-radius: 8px; font-weight: 600; text-decoration: none; margin: 24px 0; }
+      .card { background: #f1f5f9; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; margin: 24px 0; }
+      .footer { text-align: center; padding: 32px; font-size: 14px; color: #94a3b8; }
+      .badge { display: inline-block; padding: 4px 12px; border-radius: 9999px; background: #e0e7ff; color: #4338ca; font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
       <div class="container">
         <div class="header">
-          <h1>Password Reset Request</h1>
+          <div class="logo">KRONUS Infratech & Consultants</div>
         </div>
         <div class="content">
-          <p>Hi ${firstName},</p>
-          <p>You requested to reset your password. Click the button below to reset it:</p>
-          <p style="text-align: center;">
-            <a href="${resetUrl}" class="button">Reset Password</a>
-          </p>
-          <p>If you didn't request this, please ignore this email. This link will expire in 1 hour.</p>
-          <p>For security, please don't share this link with anyone.</p>
+          ${content}
         </div>
         <div class="footer">
-          <p>© ${new Date().getFullYear()} Kronus CRM. All rights reserved.</p>
+          <p>© ${new Date().getFullYear()} Kronus Infra. All rights reserved.</p>
         </div>
       </div>
-    </body>
-    </html>
+    </div>
+  </body>
+  </html>
+`;
+
+/**
+ * Send password reset email
+ */
+const sendPasswordResetEmail = async (email, resetUrl, name) => {
+  const content = `
+    <h1>Reset your password</h1>
+    <p>Hi ${name},</p>
+    <p>We received a request to reset the password for your account. Click the button below to proceed:</p>
+    <div style="text-align: center;">
+      <a href="${resetUrl}" class="button">Reset Password</a>
+    </div>
+    <p>If you didn't request this, you can safely ignore this email. The link will expire in 1 hour.</p>
   `;
 
   await sendEmail({
     email,
     subject: 'Password Reset Request - Kronus CRM',
-    html,
-    text: `Hi ${firstName}, You requested to reset your password. Visit this link: ${resetUrl}`,
+    html: baseTemplate(content),
+    text: `Hi ${name}, Reset your password here: ${resetUrl}`,
   });
 };
 
 /**
  * Send welcome email
  */
-const sendWelcomeEmail = async (email, firstName, tempPassword) => {
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #4CAF50; color: white; padding: 20px; text-align: center; }
-        .content { padding: 20px; background: #f9f9f9; }
-        .credentials { background: white; padding: 15px; border-left: 4px solid #4CAF50; margin: 20px 0; }
-        .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>Welcome to Kronus CRM</h1>
-        </div>
-        <div class="content">
-          <p>Hi ${firstName},</p>
-          <p>Welcome to Kronus CRM! Your account has been created successfully.</p>
-          ${tempPassword ? `
-          <div class="credentials">
-            <p><strong>Your temporary password:</strong></p>
-            <p style="font-size: 18px; font-family: monospace;">${tempPassword}</p>
-            <p style="color: #e74c3c; font-size: 14px;">⚠️ Please change this password immediately after your first login.</p>
-          </div>
-          ` : ''}
-          <p>You can now log in and start managing your leads and customers.</p>
-        </div>
-        <div class="footer">
-          <p>© ${new Date().getFullYear()} Kronus CRM. All rights reserved.</p>
-        </div>
+const sendWelcomeEmail = async (email, name, tempPassword) => {
+  const content = `
+    <div class="badge">Welcome aboard</div>
+    <h1>Account Created Successfully</h1>
+    <p>Hi ${name},</p>
+    <p>Welcome to the <strong>Kronus CRM</strong> family! Your professional workspace is ready and waiting for you.</p>
+    
+    ${tempPassword ? `
+    <div class="card">
+      <p style="margin-top: 0; font-weight: 600; color: #1e293b;">Your Temporary Credentials</p>
+      <div style="background: #ffffff; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 18px; border: 1px solid #e2e8f0; text-align: center; letter-spacing: 2px;">
+        ${tempPassword}
       </div>
-    </body>
-    </html>
+      <p style="margin-bottom: 0; margin-top: 12px; font-size: 13px; color: #ef4444;">
+        * For security, please change this password immediately after your first login.
+      </p>
+    </div>
+    ` : ''}
+
+    <p>Click the button below to access your dashboard and start managing your leads.</p>
+    <div style="text-align: center;">
+      <a href="${process.env.FRONTEND_URL}/login" class="button">Login to CRM</a>
+    </div>
+    
+    <p>If you have any questions, our support team is always here to help.</p>
   `;
 
   await sendEmail({
     email,
     subject: 'Welcome to Kronus CRM',
-    html,
-    text: `Hi ${firstName}, Welcome to Kronus CRM! ${tempPassword ? `Your temporary password is: ${tempPassword}` : ''}`,
+    html: baseTemplate(content),
+    text: `Hi ${name}, Welcome to Kronus CRM! ${tempPassword ? `Your temp password: ${tempPassword}` : ''}`,
+  });
+};
+
+/**
+ * Send lead assignment email
+ */
+const sendLeadAssignmentEmail = async (userEmail, userName, leadName, leadId) => {
+  const content = `
+    <div class="badge" style="background: #dcfce7; color: #15803d;">New Assignment</div>
+    <h1>New Lead Assigned to You</h1>
+    <p>Hi ${userName},</p>
+    <p>A new lead has been assigned to you. It's time to reach out and close the deal!</p>
+    
+    <div class="card">
+      <p style="margin: 0; font-weight: 600; color: #1e293b;">Lead Detail</p>
+      <p style="margin: 8px 0 0 0; font-size: 18px; color: #4f46e5; font-weight: 700;">${leadName}</p>
+    </div>
+
+    <p>Check the lead details and history on your dashboard:</p>
+    <div style="text-align: center;">
+      <a href="${process.env.FRONTEND_URL}/leads" class="button">View Lead Details</a>
+    </div>
+    
+    <p>Success is where preparation and opportunity meet. Good luck!</p>
+  `;
+
+  await sendEmail({
+    email: userEmail,
+    subject: 'New Lead Assigned: ' + leadName,
+    html: baseTemplate(content),
+    text: `Hi ${userName}, a new lead (${leadName}) has been assigned to you. Access it here: ${process.env.FRONTEND_URL}/leads`,
   });
 };
 
@@ -141,4 +183,5 @@ module.exports = {
   sendEmail,
   sendPasswordResetEmail,
   sendWelcomeEmail,
+  sendLeadAssignmentEmail,
 };

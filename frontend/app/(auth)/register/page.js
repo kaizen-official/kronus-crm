@@ -17,11 +17,16 @@ import Heading from "@/src/components/ui/Heading";
 import api from "@/src/services/api";
 
 const schema = z.object({
-    firstName: z.string().min(2, "First name is required"),
-    lastName: z.string().min(2, "Last name is required"),
-    email: z.string().email("Invalid email address"),
-    phone: z.string().min(10, "Phone number is required"),
-    password: z.string().min(8, "Password must be at least 8 characters"),
+    name: z.string().min(2, "Full name is required").max(100),
+    email: z.string().email("Invalid email address").refine(val => val.endsWith("@kronusinfra.org"), {
+        message: "Only @kronusinfra.org emails are allowed"
+    }),
+    phone: z.string().regex(/^\+?[\d\s\-()]+$/, "Invalid phone number"),
+    password: z.string().min(8, "Password must be at least 8 characters long")
+        .regex(/[A-Z]/, "One uppercase letter required")
+        .regex(/[a-z]/, "One lowercase letter required")
+        .regex(/[0-9]/, "One number required")
+        .regex(/[^A-Za-z0-9]/, "One special character required"),
 });
 
 export default function Register() {
@@ -81,32 +86,25 @@ export default function Register() {
                         )}
 
                         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Input
-                                    label="First Name"
-                                    placeholder="John"
-                                    error={errors.firstName?.message}
-                                    {...register("firstName")}
-                                />
-                                <Input
-                                    label="Last Name"
-                                    placeholder="Doe"
-                                    error={errors.lastName?.message}
-                                    {...register("lastName")}
-                                />
-                            </div>
+                            <Input
+                                label="Full Name"
+                                placeholder="John Doe"
+                                error={errors.name?.message}
+                                {...register("name")}
+                            />
 
                             <Input
                                 label="Email Address"
                                 type="email"
-                                placeholder="you@company.com"
+                                placeholder="you@kronusinfra.org"
                                 error={errors.email?.message}
                                 {...register("email")}
+                                note="Must be @kronusinfra.org"
                             />
 
                             <Input
                                 label="Phone Number"
-                                placeholder="+1 234 567 8900"
+                                placeholder="+91..."
                                 error={errors.phone?.message}
                                 {...register("phone")}
                             />
@@ -117,6 +115,7 @@ export default function Register() {
                                 placeholder="••••••••"
                                 error={errors.password?.message}
                                 {...register("password")}
+                                note="Min 8 chars, 1 Upper, 1 Lower, 1 Number, 1 Special"
                             />
 
                             <Button type="submit" fullWidth disabled={loading} className="mt-4">

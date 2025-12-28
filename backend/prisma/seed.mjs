@@ -1,20 +1,26 @@
 import { PrismaClient } from '@prisma/client';
-import { faker } from '@faker-js/faker';
+import { fakerEN_IN as faker } from '@faker-js/faker';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { sendLeadAssignmentEmail } = require('../src/utils/emailUtils');
+const dotenv = require('dotenv');
+const path = require('path');
+
+// Load env vars
+dotenv.config({ path: path.join(process.cwd(), '.env') });
 
 const prisma = new PrismaClient();
-
-const LEAD_COUNT = 100;
+const LEAD_COUNT =10; 
 
 function randomEnum(values) {
   return values[Math.floor(Math.random() * values.length)];
 }
 
 async function main() {
-  console.log('🌱 Seeding leads...');
+  console.log('🌱 Seeding leads with email notifications...');
 
   const users = await prisma.user.findMany({
-    where: { isActive: true },
-    select: { id: true },
+    select: { id: true, name: true, email: true },
   });
 
   if (!users.length) {
@@ -22,56 +28,49 @@ async function main() {
   }
 
   const leadSources = [
-    'WEBSITE',
-    'REFERRAL',
-    'SOCIAL_MEDIA',
-    'EMAIL_CAMPAIGN',
-    'COLD_CALL',
-    'EVENT',
-    'PARTNER',
-    'OTHER',
+    'WEBSITE', 'REFERRAL', 'INSTAGRAM', 'YOUTUBE', 'EMAIL', 'WHATSAPP',
+    'NINETY_NINE_ACRES', 'MAGICBRICKS', 'OLX', 'COLD_OUTREACH',
   ];
 
   const leadStatuses = [
-    'NEW',
-    'CONTACTED',
-    'QUALIFIED',
-    'PROPOSAL',
-    'NEGOTIATION',
-    'WON',
-    'LOST',
-    'INACTIVE',
+    'NEW', 'CONTACTED', 'INTERESTED', 'NOT_INTERESTED', 'SITE_VISIT',
+    'NEGOTIATION', 'DOCUMENTATION', 'WON', 'LOST',
   ];
 
   const priorities = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
 
-  const leads = Array.from({ length: LEAD_COUNT }).map((_, index) => {
+  for (let i = 0; i < LEAD_COUNT; i++) {
     const createdBy = faker.helpers.arrayElement(users);
     const assignedTo = faker.helpers.arrayElement(users);
 
-    return {
-      firstName: `test${index + 1}`,
-      lastName: faker.person.lastName(),
+    const leadData = {
+      name: `${faker.person.firstName()} ${faker.person.lastName()}`,
       email: faker.internet.email(),
       phone: String(faker.number.int({ min: 6000000000, max: 9999999999 })),
       property: faker.location.streetAddress(),
-      position: faker.person.jobTitle(),
       source: randomEnum(leadSources),
       status: randomEnum(leadStatuses),
       priority: randomEnum(priorities),
-      estimatedValue: faker.number.int({ min: 1000, max: 500000 }),
-      notes: faker.lorem.sentences(2),
-      city: faker.location.city(),
-      state: faker.location.state(),
-      country: faker.location.country(),
+      value: faker.number.int({ min: 1000000, max: 9999999 }),
+      followUpDate: faker.date.future(),
       createdById: createdBy.id,
       assignedToId: assignedTo.id,
     };
-  });
 
-  await prisma.lead.createMany({ data: leads });
+    const lead = await prisma.lead.create({
+      data: leadData,
+    });
 
-  console.log(`✅ Seeded ${LEAD_COUNT} leads`);
+    // Send email to assignee
+    try {
+      await sendLeadAssignmentEmail(assignedTo.email, assignedTo.name, lead.name, lead.id);
+      console.log(`📧 Notification sent to ${assignedTo.name} for lead: ${lead.name}`);
+    } catch (error) {
+      console.error(`❌ Failed to send email to ${assignedTo.name}:`, error.message);
+    }
+  }
+
+  console.log(`✅ Seeded ${LEAD_COUNT} leads with notifications`);
 }
 
 main()

@@ -5,12 +5,36 @@ import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import { motion } from "framer-motion";
 import { HiUser, HiShieldCheck, HiBell, HiKey } from "react-icons/hi";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "react-hot-toast";
 
 import Heading from "@/src/components/ui/Heading";
 import Card from "@/src/components/ui/Card";
 import Input from "@/src/components/ui/Input";
 import Button from "@/src/components/ui/Button";
 import api from "@/src/services/api";
+
+const profileSchema = z.object({
+    name: z.string().min(2, "Name must be at least 2 characters").max(100, "Name too long"),
+    phone: z.string().regex(/^\+?[\d\s\-()]+$/, "Invalid phone number"),
+    department: z.string().min(1, "Department is required"),
+    designation: z.string().min(1, "Designation is required"),
+});
+
+const securitySchema = z.object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: z.string()
+        .min(8, "Password must be at least 8 characters long")
+        .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+        .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+        .regex(/[0-9]/, "Password must contain at least one number")
+        .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
+    confirmPassword: z.string().min(1, "Please confirm your new password"),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+});
 
 export default function SettingsPage() {
     const [activeTab, setActiveTab] = useState("profile");
@@ -69,8 +93,15 @@ function ProfileForm() {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [message, setMessage] = useState({ type: "", text: "" });
-    const { register, handleSubmit, setValue } = useForm();
+    
+    const { 
+        register, 
+        handleSubmit, 
+        setValue,
+        formState: { errors } 
+    } = useForm({
+        resolver: zodResolver(profileSchema)
+    });
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -78,8 +109,7 @@ function ProfileForm() {
                 const response = await api.get("/users/profile");
                 const data = response.data.data;
                 setUser(data);
-                setValue("firstName", data.firstName);
-                setValue("lastName", data.lastName);
+                setValue("name", data.name);
                 setValue("email", data.email);
                 setValue("phone", data.phone);
                 setValue("department", data.department);
@@ -93,25 +123,31 @@ function ProfileForm() {
 
     const onSubmit = async (data) => {
         setLoading(true);
-        setMessage({ type: "", text: "" });
         try {
             await api.put("/users/profile", data);
-            setMessage({ type: "success", text: "Profile updated successfully!" });
+            toast.success("Profile updated successfully!");
 
             // Update cookie
             const currentUser = JSON.parse(Cookies.get("user") || "{}");
             Cookies.set("user", JSON.stringify({ ...currentUser, ...data }));
 
-            // Re-fetch to sync state and exit edit mode
-            const response = await api.get("/users/profile");
-            setUser(response.data.data);
+            // Sync state and exit edit mode
+            setUser({ ...user, ...data });
             setIsEditing(false);
 
         } catch (error) {
-            setMessage({ type: "error", text: error.response?.data?.message || "Failed to update profile." });
+            console.error(error);
+            toast.error(error.response?.data?.message || "Failed to update profile.");
         } finally {
             setLoading(false);
         }
+    };
+
+    const isUserOnline = (lastLoginAt) => {
+        if (!lastLoginAt) return false;
+        const lastLogin = new Date(lastLoginAt);
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        return lastLogin > oneHourAgo;
     };
 
     if (!user) return <div className="p-8 text-center text-gray-500">Loading profile...</div>;
@@ -131,22 +167,14 @@ function ProfileForm() {
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <ProfileField
-                        label="First Name"
-                        name="firstName"
-                        register={register}
-                        isEditing={isEditing}
-                        value={user.firstName}
-                    />
-                    <ProfileField
-                        label="Last Name"
-                        name="lastName"
-                        register={register}
-                        isEditing={isEditing}
-                        value={user.lastName}
-                    />
-                </div>
+                <ProfileField
+                    label="Full Name"
+                    name="name"
+                    register={register}
+                    isEditing={isEditing}
+                    value={user.name}
+                    error={errors.name?.message}
+                />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <ProfileField
@@ -164,6 +192,7 @@ function ProfileForm() {
                         register={register}
                         isEditing={isEditing}
                         value={user.phone}
+                        error={errors.phone?.message}
                     />
                 </div>
 
@@ -175,6 +204,7 @@ function ProfileForm() {
                         isEditing={isEditing}
                         value={user.department}
                         placeholder="e.g. Sales"
+                        error={errors.department?.message}
                     />
                     <ProfileField
                         label="Designation"
@@ -183,29 +213,31 @@ function ProfileForm() {
                         isEditing={isEditing}
                         value={user.designation}
                         placeholder="e.g. Senior Manager"
+                        error={errors.designation?.message}
                     />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Role</label>
-                        <span className="inline-block px-2 py-1 bg-brand-primary/10 text-brand-primary rounded text-xs font-bold ring-1 ring-brand-primary/20">
-                            {user.role}
-                        </span>
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Roles</label>
+                        <div className="flex flex-wrap gap-1">
+                            {(user.roles || []).map(role => (
+                                <span key={role} className="inline-block px-2 py-1 bg-brand-primary/10 text-brand-primary rounded text-[10px] font-bold ring-1 ring-brand-primary/20">
+                                    {role}
+                                </span>
+                            ))}
+                        </div>
                     </div>
                     <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Joined On</label>
-                        <div className="font-medium text-gray-900">
-                            {new Date(user.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Status</label>
+                        <div className={`font-medium flex items-center gap-2 ${isUserOnline(user.lastLoginAt) ? "text-green-600" : "text-gray-500"}`}>
+                            <span className={`w-2 h-2 rounded-full ${isUserOnline(user.lastLoginAt) ? "bg-green-600 animate-pulse" : "bg-gray-400"}`}></span>
+                            {isUserOnline(user.lastLoginAt) ? "Online" : "Away"}
                         </div>
                     </div>
                 </div>
 
-                {message.text && (
-                    <div className={`p-4 rounded-lg text-sm ${message.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
-                        {message.text}
-                    </div>
-                )}
+
 
                 {isEditing && (
                     <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
@@ -222,7 +254,7 @@ function ProfileForm() {
     );
 }
 
-function ProfileField({ label, name, register, isEditing, value, disabled, note, placeholder }) {
+function ProfileField({ label, name, register, isEditing, value, disabled, note, placeholder, error }) {
     if (!isEditing) {
         return (
             <div>
@@ -242,32 +274,33 @@ function ProfileField({ label, name, register, isEditing, value, disabled, note,
             className={disabled ? "bg-gray-50 cursor-not-allowed" : ""}
             note={note}
             placeholder={placeholder}
+            error={error}
         />
     );
 }
 
 function SecurityForm() {
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState({ type: "", text: "" });
-    const { register, handleSubmit, reset, formState: { errors } } = useForm();
+    const { 
+        register, 
+        handleSubmit, 
+        reset, 
+        formState: { errors } 
+    } = useForm({
+        resolver: zodResolver(securitySchema)
+    });
 
     const onSubmit = async (data) => {
-        if (data.newPassword !== data.confirmPassword) {
-            setMessage({ type: "error", text: "New passwords do not match." });
-            return;
-        }
-
         setLoading(true);
-        setMessage({ type: "", text: "" });
         try {
             await api.put("/auth/change-password", {
                 currentPassword: data.currentPassword,
                 newPassword: data.newPassword
             });
-            setMessage({ type: "success", text: "Password changed successfully!" });
+            toast.success("Password changed successfully!");
             reset();
         } catch (error) {
-            setMessage({ type: "error", text: error.response?.data?.message || "Failed to change password." });
+            toast.error(error.response?.data?.message || "Failed to change password.");
         } finally {
             setLoading(false);
         }
@@ -284,28 +317,27 @@ function SecurityForm() {
                 <Input
                     label="Current Password"
                     type="password"
-                    {...register("currentPassword", { required: true })}
+                    error={errors.currentPassword?.message}
+                    {...register("currentPassword")}
                 />
 
                 <div className="space-y-4 pt-2">
                     <Input
                         label="New Password"
                         type="password"
-                        {...register("newPassword", { required: true, minLength: 6 })}
-                        note="Minimum 6 characters"
+                        error={errors.newPassword?.message}
+                        {...register("newPassword")}
+                        note="Min 8 chars, 1 Upper, 1 Lower, 1 Number, 1 Special"
                     />
                     <Input
                         label="Confirm New Password"
                         type="password"
-                        {...register("confirmPassword", { required: true })}
+                        error={errors.confirmPassword?.message}
+                        {...register("confirmPassword")}
                     />
                 </div>
 
-                {message.text && (
-                    <div className={`p-4 rounded-lg text-sm ${message.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
-                        {message.text}
-                    </div>
-                )}
+
 
                 <div className="pt-4">
                     <Button type="submit" variant="outline" disabled={loading} className="w-full sm:w-auto">

@@ -54,10 +54,10 @@ export default function UsersPage() {
                  return false;
              }
              const user = JSON.parse(userData);
-             if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
-                 router.push("/dashboard");
-                 return false;
-             }
+            //  if (!user.roles || !user.roles.includes("ADMIN")) {
+            //      router.push("/dashboard");
+            //      return false;
+            //  }
              return true;
         }
         
@@ -143,9 +143,11 @@ export default function UsersPage() {
                         placeholder="Filter by Role"
                         className="py-2.5!"
                         options={[
-                            { label: "User", value: "USER" },
-                            { label: "Manager", value: "MANAGER" },
                             { label: "Admin", value: "ADMIN" },
+                            { label: "Executive", value: "EXECUTIVE" },
+                            { label: "Director", value: "DIRECTOR" },
+                            { label: "Manager", value: "MANAGER" },
+                            { label: "Salesman", value: "SALESMAN" },
                         ]}
                         value={roleFilter}
                         onChange={(e) => setRoleFilter(e.target.value)}
@@ -197,14 +199,21 @@ export default function UsersPage() {
                                 users.map((user) => (
                                     <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4 font-medium text-gray-900">
-                                            {user.firstName} {user.lastName}
+                                            <div className="flex items-center gap-2">
+                                                {user.name}
+                                                <OnlineDot lastLoginAt={user.lastLoginAt} />
+                                            </div>
                                             <div className="text-xs text-gray-400 font-normal">{user.designation || "No Designation"}</div>
                                         </td>
                                         <td className="px-6 py-4 text-gray-600">{user.email}</td>
                                         <td className="px-6 py-4 text-gray-600">{user.phone}</td>
                                         <td className="px-6 py-4 text-gray-600">{user.department || "No Department"}</td>
                                         <td className="px-6 py-4">
-                                            <RoleBadge role={user.role} />
+                                            <div className="flex flex-wrap gap-1">
+                                                {(user.roles || []).map(role => (
+                                                    <RoleBadge key={role} role={role} />
+                                                ))}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
@@ -276,15 +285,31 @@ export default function UsersPage() {
 
 function RoleBadge({ role }) {
     const styles = {
-        SUPER_ADMIN: "bg-purple-100 text-purple-700 ring-purple-600/20",
         ADMIN: "bg-indigo-100 text-indigo-700 ring-indigo-600/20",
+        DIRECTOR: "bg-purple-100 text-purple-700 ring-purple-600/20",
         MANAGER: "bg-blue-100 text-blue-700 ring-blue-600/20",
-        USER: "bg-gray-100 text-gray-700 ring-gray-600/20",
+        EXECUTIVE: "bg-green-100 text-green-700 ring-green-600/20",
+        SALESMAN: "bg-gray-100 text-gray-700 ring-gray-600/20",
     };
 
     return (
-        <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ring-1 ring-inset ${styles[role] || styles.USER}`}>
+        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ring-1 ring-inset ${styles[role] || styles.SALESMAN}`}>
             {role.replace("_", " ")}
         </span>
+    );
+}
+
+function OnlineDot({ lastLoginAt }) {
+    if (!lastLoginAt) return <span className="w-2 h-2 rounded-full bg-gray-300" title="Never logged in"></span>;
+    
+    const lastLogin = new Date(lastLoginAt);
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const isOnline = lastLogin > oneHourAgo;
+
+    return (
+        <span 
+            className={`w-2 h-2 rounded-full ${isOnline ? "bg-green-500 animate-pulse" : "bg-gray-300"}`} 
+            title={isOnline ? "Online" : `Last seen: ${lastLogin.toLocaleString()}`}
+        ></span>
     );
 }

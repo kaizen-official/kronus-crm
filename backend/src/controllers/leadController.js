@@ -1,5 +1,6 @@
 const prisma = require('../config/database');
 const { HTTP_STATUS, ROLES } = require('../config/constants');
+const { sendLeadAssignmentEmail } = require('../utils/emailUtils');
 
 /**
  * @desc    Get all leads (with pagination, search, and filters)
@@ -29,8 +30,7 @@ const getLeads = async (req, res, next) => {
     const where = {
       ...(search && {
         OR: [
-          { firstName: { contains: search, mode: 'insensitive' } },
-          { lastName: { contains: search, mode: 'insensitive' } },
+          { name: { contains: search, mode: 'insensitive' } },
           { email: { contains: search, mode: 'insensitive' } },
           { property: { contains: search, mode: 'insensitive' } },
           { phone: { contains: search, mode: 'insensitive' } },
@@ -50,7 +50,7 @@ const getLeads = async (req, res, next) => {
     };
 
     // Non-admin users can only see their created or assigned leads
-    if (req.user.role !== ROLES.SUPER_ADMIN && req.user.role !== ROLES.ADMIN) {
+    if (!req.user.roles.includes(ROLES.ADMIN)) {
       where.OR = [
         { createdById: req.user.id },
         { assignedToId: req.user.id },
@@ -68,16 +68,14 @@ const getLeads = async (req, res, next) => {
           createdBy: {
             select: {
               id: true,
-              firstName: true,
-              lastName: true,
+              name: true,
               email: true,
             },
           },
           assignedTo: {
             select: {
               id: true,
-              firstName: true,
-              lastName: true,
+              name: true,
               email: true,
             },
           },
@@ -143,8 +141,7 @@ const getLeadById = async (req, res, next) => {
             user: {
               select: {
                 id: true,
-                firstName: true,
-                lastName: true,
+                name: true,
               },
             },
           },
@@ -162,8 +159,7 @@ const getLeadById = async (req, res, next) => {
 
     // Check access permission
     if (
-      req.user.role !== ROLES.SUPER_ADMIN &&
-      req.user.role !== ROLES.ADMIN &&
+      !req.user.roles.includes(ROLES.ADMIN) &&
       lead.createdById !== req.user.id &&
       lead.assignedToId !== req.user.id
     ) {
@@ -190,22 +186,15 @@ const getLeadById = async (req, res, next) => {
 const createLead = async (req, res, next) => {
   try {
     const {
-      firstName,
-      lastName,
+      name,
       email,
       phone,
       property,
-      position,
       source,
       status,
       priority,
-      estimatedValue,
-      notes,
-      address,
-      city,
-      state,
-      country,
-      zipCode,
+      value,
+      followUpDate,
       assignedToId,
       documents = [] // Expecting array of { name, url, type, size }
     } = req.body;
@@ -226,22 +215,15 @@ const createLead = async (req, res, next) => {
 
     const lead = await prisma.lead.create({
       data: {
-        firstName,
-        lastName,
-        email,
+        name,
+        email: email || null,
         phone,
         property: property || null,
-        position: position || null,
         source: source || 'WEBSITE',
         status: status || 'NEW',
         priority: priority || 'MEDIUM',
-        estimatedValue: estimatedValue || null,
-        notes: notes || null,
-        address: address || null,
-        city: city || null,
-        state: state || null,
-        country: country || null,
-        zipCode: zipCode || null,
+        value: value || null,
+        followUpDate: followUpDate ? new Date(followUpDate) : null,
         createdById: req.user.id,
         assignedToId: assignedToId || null,
         documents: {
@@ -257,16 +239,14 @@ const createLead = async (req, res, next) => {
         createdBy: {
           select: {
             id: true,
-            firstName: true,
-            lastName: true,
+            name: true,
             email: true,
           },
         },
         assignedTo: {
           select: {
             id: true,
-            firstName: true,
-            lastName: true,
+            name: true,
             email: true,
           },
         },
@@ -278,11 +258,21 @@ const createLead = async (req, res, next) => {
       data: {
         type: 'NOTE',
         title: 'Lead Created',
-        description: `Lead created by ${req.user.firstName} ${req.user.lastName}`,
+        description: `Lead created by ${req.user.name}`,
         userId: req.user.id,
         leadId: lead.id,
       },
     });
+
+    // Send email to assignee if assigned
+    if (lead.assignedTo) {
+      sendLeadAssignmentEmail(
+        lead.assignedTo.email,
+        lead.assignedTo.name,
+        lead.name,
+        lead.id
+      ).catch(err => console.error('Failed to send assignment email:', err));
+    }
 
     res.status(HTTP_STATUS.CREATED).json({
       success: true,
@@ -319,8 +309,7 @@ const updateLead = async (req, res, next) => {
 
     // Check access permission
     if (
-      req.user.role !== ROLES.SUPER_ADMIN &&
-      req.user.role !== ROLES.ADMIN &&
+      !req.user.roles.includes(ROLES.ADMIN) &&
       existingLead.createdById !== req.user.id &&
       existingLead.assignedToId !== req.user.id
     ) {
@@ -335,21 +324,32 @@ const updateLead = async (req, res, next) => {
 
     // List of fields to track for activity log
     const trackedFields = {
-      firstName: 'First Name',
-      lastName: 'Last Name',
+      name: 'Name',
       email: 'Email',
       phone: 'Phone',
       status: 'Status',
       priority: 'Priority',
-      estimatedValue: 'Value',
-      property: 'Property'
+      value: 'Value',
+      property: 'Property',
+      followUpDate: 'Follow-up Date'
     };
+
+    if (updateData.followUpDate) {
+      updateData.followUpDate = new Date(updateData.followUpDate);
+    }
 
     Object.keys(updateData).forEach(key => {
       if (trackedFields[key] && updateData[key] !== existingLead[key] && updateData[key] !== undefined) {
         // Handle potential nulls for display
-        const oldVal = existingLead[key] || 'Empty';
-        const newVal = updateData[key];
+        let oldVal = existingLead[key] || 'Empty';
+        let newVal = updateData[key];
+
+        // Format dates for better logs
+        if (key === 'followUpDate') {
+          oldVal = existingLead[key] ? new Date(existingLead[key]).toLocaleDateString() : 'Empty';
+          newVal = updateData[key] ? new Date(updateData[key]).toLocaleDateString() : 'Empty';
+        }
+
         changes.push(`${trackedFields[key]} changed from "${oldVal}" to "${newVal}"`);
       }
     });
@@ -366,7 +366,7 @@ const updateLead = async (req, res, next) => {
           message: 'Assigned user not found',
         });
       }
-      changes.push(`Assigned to ${assignedUser.firstName} ${assignedUser.lastName}`);
+      changes.push(`Assigned to ${assignedUser.name}`);
     }
 
     // Update lead in Database
@@ -377,16 +377,14 @@ const updateLead = async (req, res, next) => {
         createdBy: {
           select: {
             id: true,
-            firstName: true,
-            lastName: true,
+            name: true,
             email: true,
           },
         },
         assignedTo: {
           select: {
             id: true,
-            firstName: true,
-            lastName: true,
+            name: true,
             email: true,
           },
         },
@@ -421,6 +419,16 @@ const updateLead = async (req, res, next) => {
           leadId: lead.id,
         },
       });
+
+      // If assigned user changed, send email
+      if (updateData.assignedToId && updateData.assignedToId !== existingLead.assignedToId) {
+        sendLeadAssignmentEmail(
+          lead.assignedTo.email,
+          lead.assignedTo.name,
+          lead.name,
+          lead.id
+        ).catch(err => console.error('Failed to send assignment email:', err));
+      }
     }
 
     // Create SEPARATE activity for USER NOTE (if provided)
@@ -490,7 +498,7 @@ const getLeadStats = async (req, res, next) => {
     const where = {};
 
     // Non-admin users can only see their stats
-    if (req.user.role !== ROLES.SUPER_ADMIN && req.user.role !== ROLES.ADMIN) {
+    if (!req.user.roles.includes(ROLES.ADMIN)) {
       where.OR = [
         { createdById: req.user.id },
         { assignedToId: req.user.id },
@@ -522,7 +530,7 @@ const getLeadStats = async (req, res, next) => {
       }),
       prisma.lead.aggregate({
         _sum: {
-          estimatedValue: true,
+          value: true,
         },
         where,
       }),
@@ -547,7 +555,7 @@ const getLeadStats = async (req, res, next) => {
       success: true,
       data: {
         totalLeads,
-        totalEstimatedValue: totalEstimatedValue._sum.estimatedValue || 0,
+        totalValue: totalEstimatedValue._sum.value || 0,
         leadsByStatus: statusStats,
         leadsByPriority: priorityStats,
         leadsBySource: sourceStats,
@@ -600,8 +608,7 @@ const assignLead = async (req, res, next) => {
         assignedTo: {
           select: {
             id: true,
-            firstName: true,
-            lastName: true,
+            name: true,
             email: true,
           },
         },
@@ -614,12 +621,22 @@ const assignLead = async (req, res, next) => {
         type: 'NOTE',
         title: 'Lead Assigned',
         description: assignedToId
-          ? `Lead assigned to ${updatedLead.assignedTo.firstName} ${updatedLead.assignedTo.lastName}`
+          ? `Lead assigned to ${updatedLead.assignedTo.name}`
           : 'Lead unassigned',
         userId: req.user.id,
         leadId: lead.id,
       },
     });
+
+    // Send email to assignee
+    if (assignedToId && updatedLead.assignedTo) {
+      sendLeadAssignmentEmail(
+        updatedLead.assignedTo.email,
+        updatedLead.assignedTo.name,
+        updatedLead.name,
+        updatedLead.id
+      ).catch(err => console.error('Failed to send assignment email:', err));
+    }
 
     res.status(HTTP_STATUS.OK).json({
       success: true,
@@ -657,8 +674,7 @@ const deleteDocument = async (req, res, next) => {
 
     // Check access permission
     if (
-      req.user.role !== ROLES.SUPER_ADMIN &&
-      req.user.role !== ROLES.ADMIN &&
+      !req.user.roles.includes(ROLES.ADMIN) &&
       document.lead.createdById !== req.user.id &&
       document.lead.assignedToId !== req.user.id
     ) {

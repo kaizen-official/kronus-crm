@@ -17,6 +17,7 @@ const {
   loginValidation,
   forgotPasswordValidation,
   resetPasswordValidation,
+  changePasswordValidation,
 } = require('../utils/validationRules');
 
 // Public routes with rate limiting
@@ -27,7 +28,7 @@ router.put('/reset-password/:token', authLimiter, resetPasswordValidation, valid
 
 // Protected routes
 router.get('/me', protect, getMe);
-router.put('/change-password', protect, changePassword);
+router.put('/change-password', protect, changePasswordValidation, validate, changePassword);
 router.post('/logout', protect, logout);
 
 module.exports = router;

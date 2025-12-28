@@ -77,7 +77,7 @@ export default function DashboardLayout({ children }) {
                 <div className="h-16 flex items-center justify-between px-6 border-b border-gray-100">
                     {isSidebarOpen ? (
                         // <span className="text-2xl font-bold text-brand-primary">Kronus</span>
-                        <img src="/logo.png" alt="Logo" className="w-44 pt-2"/>
+                        <img src="/logo.png" alt="Logo" className="w-44 pt-2" />
                     ) : (
                         <span className="text-2xl font-bold text-brand-primary"></span>
                         // <img src="/logo_circular.png" alt="Logo" className="w-44"/>
@@ -89,7 +89,8 @@ export default function DashboardLayout({ children }) {
 
                 <nav className="flex-1 py-6 px-3 space-y-2">
                     {menuItems.map((item) => {
-                        if (item.role && user.role !== item.role && user.role !== 'SUPER_ADMIN') return null;
+                        const userRoles = user.roles || [];
+                        if (item.role && !userRoles.includes(item.role) && !userRoles.includes('ADMIN')) return null;
 
                         const isActive = pathname === item.href;
                         return (
@@ -130,7 +131,7 @@ export default function DashboardLayout({ children }) {
                 <div className="md:hidden h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sticky top-0 z-20">
                     <div className="flex items-center gap-2">
                         {/* <span className="text-xl font-bold text-brand-primary">Kronus</span> */}
-                        <img src="/logo.png" alt="Logo" className="w-28 pt-2"/>
+                        <img src="/logo.png" alt="Logo" className="w-28 pt-2" />
                         <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="text-gray-500 hover:text-brand-primary">
                             <HiMenuAlt2 size={24} />
                         </button>

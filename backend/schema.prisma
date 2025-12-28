@@ -14,11 +14,11 @@ model User {
   id                String   @id @default(auto()) @map("_id") @db.ObjectId
   email             String   @unique
   password          String
-  firstName         String
-  lastName          String
+  name              String
   phone             String?
-  role              Role     @default(USER)
+  roles             Role[]   @default([SALESMAN])
   isActive          Boolean  @default(true)
+  lastLoginAt       DateTime?
   profileImage      String?
   department        String?
   designation       String?
@@ -37,22 +37,15 @@ model User {
 
 model Lead {
   id              String      @id @default(auto()) @map("_id") @db.ObjectId
-  firstName       String
-  lastName        String
-  email           String
+  name            String
+  email           String?
   phone           String
   property        String?
-  position        String?
   source          LeadSource  @default(WEBSITE)
   status          LeadStatus  @default(NEW)
   priority        Priority    @default(MEDIUM)
-  estimatedValue  Float?
-  notes           String?
-  address         String?
-  city            String?
-  state           String?
-  country         String?
-  zipCode         String?
+  value           Float?
+  followUpDate    DateTime?
   
   // Relations
   createdById     String      @db.ObjectId
@@ -88,32 +81,36 @@ model Activity {
 }
 
 enum Role {
-  SUPER_ADMIN
   ADMIN
+  EXECUTIVE
+  DIRECTOR
   MANAGER
-  USER
+  SALESMAN
 }
 
 enum LeadSource {
   WEBSITE
   REFERRAL
-  SOCIAL_MEDIA
-  EMAIL_CAMPAIGN
-  COLD_CALL
-  EVENT
-  PARTNER
-  OTHER
+  INSTAGRAM
+  YOUTUBE
+  EMAIL
+  WHATSAPP
+  NINETY_NINE_ACRES
+  MAGICBRICKS
+  OLX
+  COLD_OUTREACH
 }
 
 enum LeadStatus {
   NEW
   CONTACTED
-  QUALIFIED
-  PROPOSAL
+  INTERESTED
+  NOT_INTERESTED
+  SITE_VISIT
   NEGOTIATION
+  DOCUMENTATION
   WON
   LOST
-  INACTIVE
 }
 
 enum Priority {

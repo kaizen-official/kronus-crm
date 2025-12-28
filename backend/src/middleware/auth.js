@@ -31,14 +31,14 @@ const protect = async (req, res, next) => {
         select: {
           id: true,
           email: true,
-          firstName: true,
-          lastName: true,
-          role: true,
+          name: true,
+          roles: true,
           isActive: true,
           phone: true,
           department: true,
           designation: true,
           profileImage: true,
+          lastLoginAt: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -78,9 +78,9 @@ const protect = async (req, res, next) => {
 
 /**
  * Middleware to authorize based on user roles
- * @param  {...any} roles - Allowed roles
+ * @param  {...any} allowedRoles - Allowed roles
  */
-const authorize = (...roles) => {
+const authorize = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(HTTP_STATUS.UNAUTHORIZED).json({
@@ -89,10 +89,14 @@ const authorize = (...roles) => {
       });
     }
 
-    if (!roles.includes(req.user.role)) {
+    // Check if any of the user's roles match the allowed roles
+    const userRoles = req.user.roles || [];
+    const hasPermission = userRoles.some(role => allowedRoles.includes(role));
+
+    if (!hasPermission) {
       return res.status(HTTP_STATUS.FORBIDDEN).json({
         success: false,
-        message: `User role '${req.user.role}' is not authorized to access this route`,
+        message: `User roles [${userRoles.join(', ')}] are not authorized to access this route`,
       });
     }
 

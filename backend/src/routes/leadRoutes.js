@@ -23,10 +23,10 @@ router.get('/', protect, getLeads);
 router.get('/:id', protect, idValidation, validate, getLeadById);
 router.post('/', protect, createLeadValidation, validate, createLead);
 router.put('/:id', protect, idValidation, updateLeadValidation, validate, updateLead);
-router.delete('/:id', protect, authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN), idValidation, validate, deleteLead);
+router.delete('/:id', protect, authorize(ROLES.ADMIN, ROLES.DIRECTOR), idValidation, validate, deleteLead);
 
 // Lead assignment (Admin and Manager only)
-router.put('/:id/assign', protect, authorize(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER), idValidation, validate, assignLead);
+router.put('/:id/assign', protect, authorize(ROLES.ADMIN, ROLES.MANAGER, ROLES.DIRECTOR, ROLES.EXECUTIVE), idValidation, validate, assignLead);
 
 // Document deletion
 router.delete('/documents/:id', protect, idValidation, validate, deleteDocument);

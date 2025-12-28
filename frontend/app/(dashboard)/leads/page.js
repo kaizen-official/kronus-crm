@@ -192,8 +192,11 @@ export default function LeadsPage() {
                         options={[
                             { label: "New", value: "NEW" },
                             { label: "Contacted", value: "CONTACTED" },
-                            { label: "Qualified", value: "QUALIFIED" },
-                            { label: "Proposal", value: "PROPOSAL" },
+                            { label: "Interested", value: "INTERESTED" },
+                            { label: "Not Interested", value: "NOT_INTERESTED" },
+                            { label: "Site Visit", value: "SITE_VISIT" },
+                            { label: "Negotiation", value: "NEGOTIATION" },
+                            { label: "Documentation", value: "DOCUMENTATION" },
                             { label: "Won", value: "WON" },
                             { label: "Lost", value: "LOST" },
                         ]}
@@ -204,13 +207,13 @@ export default function LeadsPage() {
             </div>
 
             {/* Table */}
-            <Card className="overflow-hidden p-0 border border-gray-200 shadow-sm relative min-h-[400px]">
+            <Card className="overflow-hidden p-0 border border-gray-200 shadow-sm relative min-h-[330px]">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse min-w-[800px]">
                         <thead>
                             <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase text-gray-500 font-semibold tracking-wider">
-                                <th className="px-4 py-4 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('firstName')}>
-                                    Name <SortIcon field="firstName" />
+                                <th className="px-4 py-4 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('name')}>
+                                    Name <SortIcon field="name" />
                                 </th>
                                 <th className="px-4 py-4 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('property')}>
                                     Property <SortIcon field="property" />
@@ -221,8 +224,11 @@ export default function LeadsPage() {
                                 <th className="px-4 py-4 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('status')}>
                                     Status <SortIcon field="status" />
                                 </th>
-                                <th className="px-4 py-4 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('estimatedValue')}>
-                                    Value <SortIcon field="estimatedValue" />
+                                <th className="px-4 py-4 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('value')}>
+                                    Value <SortIcon field="value" />
+                                </th>
+                                <th className="px-4 py-4 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('followUpDate')}>
+                                    Follow-up <SortIcon field="followUpDate" />
                                 </th>
                                 <th className="px-4 py-4">Assigned To</th>
                                 <th className="px-4 py-4 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('createdAt')}>
@@ -241,7 +247,7 @@ export default function LeadsPage() {
                                         exit={{ opacity: 0 }}
                                         className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-10 flex items-center justify-center"
                                     >
-                                        <td colSpan="6" className="w-full h-full flex items-center justify-center">
+                                        <td colSpan="9" className="w-full h-full flex items-center justify-center">
                                             <div className="w-6 h-6 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
                                         </td>
                                     </motion.tr>
@@ -250,7 +256,7 @@ export default function LeadsPage() {
 
                             {!loading && leads.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                                    <td colSpan="9" className="px-6 py-12 text-center text-gray-500">
                                         <div className="flex flex-col items-center gap-2">
                                             <HiSearch size={24} className="text-gray-300" />
                                             <p>No leads found matching your criteria.</p>
@@ -264,24 +270,34 @@ export default function LeadsPage() {
                                         layoutId={lead.id}
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
-                                        className="hover:bg-gray-50/50 transition-colors cursor-pointer"
+                                        className="hover:bg-gray-50/50 transition-colors cursor-pointer text-sm"
                                         onClick={() => setSelectedLead(lead)}
                                     >
                                         <td className="px-4 py-4 font-medium text-gray-900">
-                                            {lead.firstName} {lead.lastName}
+                                            {lead.name}
                                         </td>
                                         <td className="px-4 py-4 text-gray-600">{lead.property || "-"}</td>
-                                        <td className="px-4 py-4 text-gray-600">{lead.source || "-"}</td>
+                                        <td className="px-4 py-4 text-gray-600 text-xs">{lead.source?.replace(/_/g, ' ') || "-"}</td>
                                         <td className="px-4 py-4">
                                             <StatusBadge status={lead.status} />
                                         </td>
-                                        <td className="px-4 py-4 font-semibold text-red-500">
-                                            ₹{(lead.estimatedValue || 0).toLocaleString()}
+                                        <td className="px-4 py-4 font-semibold text-gray-900">
+                                            ₹{(lead.value || 0).toLocaleString()}
                                         </td>
-                                        <td className="px-4 py-4 text-sm text-gray-600">
-                                            {lead.assignedTo ? `${lead.assignedTo.firstName} ${lead.assignedTo.lastName}` : <span className="text-gray-400 italic">Unassigned</span>}
+                                        <td className="px-4 py-4 text-gray-600">
+                                            {lead.followUpDate ? (
+                                                <div className="flex flex-col">
+                                                    <span>{new Date(lead.followUpDate).toLocaleDateString()}</span>
+                                                    {new Date(lead.followUpDate) < new Date() && lead.status !== 'WON' && lead.status !== 'LOST' && (
+                                                        <span className="text-[10px] text-red-500 font-bold uppercase">Overdue</span>
+                                                    )}
+                                                </div>
+                                            ) : "-"}
                                         </td>
-                                        <td className="px-4 py-4 text-sm text-gray-600">
+                                        <td className="px-4 py-4 text-gray-600">
+                                            {lead.assignedTo ? lead.assignedTo.name : <span className="text-gray-400 italic">Unassigned</span>}
+                                        </td>
+                                        <td className="px-4 py-4 text-gray-600">
                                             {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : "-"}
                                         </td>
                                         <td className="px-4 py-4 text-right flex justify-end gap-2">
@@ -419,7 +435,7 @@ export default function LeadsPage() {
                     setClosingLead(null);
                     setCloseReason("");
                 }}
-                title={`Close Lead: ${closingLead?.firstName} ${closingLead?.lastName}`}
+                title={`Close Lead: ${closingLead?.name}`}
             >
                 <div className="space-y-4">
                     <p className="text-gray-600">
@@ -460,7 +476,7 @@ export default function LeadsPage() {
                     setReopeningLead(null);
                     setReopenReason("");
                 }}
-                title={`Reopen Lead: ${reopeningLead?.firstName} ${reopeningLead?.lastName}`}
+                title={`Reopen Lead: ${reopeningLead?.name}`}
             >
                 <div className="space-y-4">
                     <p className="text-gray-600">
@@ -713,15 +729,19 @@ export default function LeadsPage() {
 function StatusBadge({ status }) {
     const styles = {
         NEW: "bg-blue-100 text-blue-700",
-        CONTACTED: "bg-purple-100 text-purple-700",
-        QUALIFIED: "bg-green-100 text-green-700",
-        LOST: "bg-red-100 text-red-700",
-        WON: "bg-yellow-100 text-yellow-700"
+        CONTACTED: "bg-cyan-100 text-cyan-700",
+        INTERESTED: "bg-green-100 text-green-700",
+        NOT_INTERESTED: "bg-gray-100 text-gray-700",
+        SITE_VISIT: "bg-purple-100 text-purple-700",
+        NEGOTIATION: "bg-orange-100 text-orange-700",
+        DOCUMENTATION: "bg-indigo-100 text-indigo-700",
+        WON: "bg-emerald-100 text-emerald-700",
+        LOST: "bg-red-100 text-red-700"
     };
 
     return (
-        <span className={`text-xs font-bold px-2 py-1 rounded-lg ${styles[status] || "bg-gray-100 text-gray-700"}`}>
-            {status}
+        <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded ${styles[status] || "bg-gray-100 text-gray-700"}`}>
+            {status.replace('_', ' ')}
         </span>
     );
 }

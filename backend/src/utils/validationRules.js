@@ -18,18 +18,12 @@ const registerValidation = [
     .withMessage('Password must be at least 8 characters long')
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
     .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
-  body('firstName')
+  body('name')
     .trim()
     .notEmpty()
-    .withMessage('First name is required')
-    .isLength({ min: 2, max: 50 })
-    .withMessage('First name must be between 2 and 50 characters'),
-  body('lastName')
-    .trim()
-    .notEmpty()
-    .withMessage('Last name is required')
-    .isLength({ min: 2, max: 50 })
-    .withMessage('Last name must be between 2 and 50 characters'),
+    .withMessage('Name is required')
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Name must be between 2 and 100 characters'),
   body('phone')
     .optional()
     .matches(/^\+?[\d\s\-()]+$/)
@@ -72,16 +66,11 @@ const resetPasswordValidation = [
  * Validation rules for updating profile
  */
 const updateProfileValidation = [
-  body('firstName')
+  body('name')
     .optional()
     .trim()
-    .isLength({ min: 2, max: 50 })
-    .withMessage('First name must be between 2 and 50 characters'),
-  body('lastName')
-    .optional()
-    .trim()
-    .isLength({ min: 2, max: 50 })
-    .withMessage('Last name must be between 2 and 50 characters'),
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Name must be between 2 and 100 characters'),
   body('phone')
     .optional()
     .matches(/^\+?[\d\s\-()]+$/)
@@ -98,19 +87,14 @@ const updateProfileValidation = [
  * Validation rules for creating a lead
  */
 const createLeadValidation = [
-  body('firstName')
+  body('name')
     .trim()
     .notEmpty()
-    .withMessage('First name is required')
-    .isLength({ min: 2, max: 50 })
-    .withMessage('First name must be between 2 and 50 characters'),
-  body('lastName')
-    .trim()
-    .notEmpty()
-    .withMessage('Last name is required')
-    .isLength({ min: 2, max: 50 })
-    .withMessage('Last name must be between 2 and 50 characters'),
+    .withMessage('Name is required')
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Name must be between 2 and 100 characters'),
   body('email')
+    .optional({ checkFalsy: true })
     .isEmail()
     .withMessage('Please provide a valid email address'),
   body('phone')
@@ -122,43 +106,39 @@ const createLeadValidation = [
   body('property')
     .optional()
     .trim(),
-  body('position')
-    .optional()
-    .trim(),
   body('source')
     .optional()
-    .isIn(['WEBSITE', 'REFERRAL', 'SOCIAL_MEDIA', 'EMAIL_CAMPAIGN', 'COLD_CALL', 'EVENT', 'PARTNER', 'OTHER'])
+    .isIn(['WEBSITE', 'REFERRAL', 'INSTAGRAM', 'YOUTUBE', 'EMAIL', 'WHATSAPP', 'NINETY_NINE_ACRES', 'MAGICBRICKS', 'OLX', 'COLD_OUTREACH'])
     .withMessage('Invalid lead source'),
   body('status')
     .optional()
-    .isIn(['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST', 'INACTIVE'])
+    .isIn(['NEW', 'CONTACTED', 'INTERESTED', 'NOT_INTERESTED', 'SITE_VISIT', 'NEGOTIATION', 'DOCUMENTATION', 'WON', 'LOST'])
     .withMessage('Invalid lead status'),
   body('priority')
     .optional()
     .isIn(['LOW', 'MEDIUM', 'HIGH', 'URGENT'])
     .withMessage('Invalid priority'),
-  body('estimatedValue')
+  body('value')
     .optional()
     .isFloat({ min: 0 })
-    .withMessage('Estimated value must be a positive number'),
+    .withMessage('Value must be a positive number'),
+  body('followUpDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Follow-up date must be a valid date'),
 ];
 
 /**
  * Validation rules for updating a lead
  */
 const updateLeadValidation = [
-  body('firstName')
+  body('name')
     .optional()
     .trim()
-    .isLength({ min: 2, max: 50 })
-    .withMessage('First name must be between 2 and 50 characters'),
-  body('lastName')
-    .optional()
-    .trim()
-    .isLength({ min: 2, max: 50 })
-    .withMessage('Last name must be between 2 and 50 characters'),
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Name must be between 2 and 100 characters'),
   body('email')
-    .optional()
+    .optional({ checkFalsy: true })
     .isEmail()
     .withMessage('Please provide a valid email address'),
   body('phone')
@@ -168,20 +148,79 @@ const updateLeadValidation = [
     .withMessage('Please provide a valid phone number'),
   body('source')
     .optional()
-    .isIn(['WEBSITE', 'REFERRAL', 'SOCIAL_MEDIA', 'EMAIL_CAMPAIGN', 'COLD_CALL', 'EVENT', 'PARTNER', 'OTHER'])
+    .isIn(['WEBSITE', 'REFERRAL', 'INSTAGRAM', 'YOUTUBE', 'EMAIL', 'WHATSAPP', 'NINETY_NINE_ACRES', 'MAGICBRICKS', 'OLX', 'COLD_OUTREACH'])
     .withMessage('Invalid lead source'),
   body('status')
     .optional()
-    .isIn(['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST', 'INACTIVE'])
+    .isIn(['NEW', 'CONTACTED', 'INTERESTED', 'NOT_INTERESTED', 'SITE_VISIT', 'NEGOTIATION', 'DOCUMENTATION', 'WON', 'LOST'])
     .withMessage('Invalid lead status'),
   body('priority')
     .optional()
     .isIn(['LOW', 'MEDIUM', 'HIGH', 'URGENT'])
     .withMessage('Invalid priority'),
-  body('estimatedValue')
+  body('value')
     .optional()
     .isFloat({ min: 0 })
-    .withMessage('Estimated value must be a positive number'),
+    .withMessage('Value must be a positive number'),
+  body('followUpDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Follow-up date must be a valid date'),
+];
+
+const changePasswordValidation = [
+  body('currentPassword')
+    .notEmpty()
+    .withMessage('Current password is required'),
+  body('newPassword')
+    .isLength({ min: 8 })
+    .withMessage('New password must be at least 8 characters long')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .withMessage('New password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
+];
+const createUserValidation = [
+  body('email').isEmail().withMessage('Please provide a valid email address'),
+  body('name')
+    .trim()
+    .notEmpty()
+    .withMessage('Name is required')
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Name must be between 2 and 100 characters'),
+  body('phone')
+    .optional()
+    .matches(/^\+?[\d\s\-()]+$/)
+    .withMessage('Please provide a valid phone number'),
+  body('roles')
+    .isArray({ min: 1 })
+    .withMessage('At least one role must be specified'),
+  body('roles.*')
+    .isIn(['ADMIN', 'EXECUTIVE', 'DIRECTOR', 'MANAGER', 'SALESMAN'])
+    .withMessage('Invalid role specified'),
+  body('department').optional().trim(),
+  body('designation').optional().trim(),
+];
+
+const updateUserValidation = [
+  body('email').optional().isEmail().withMessage('Please provide a valid email address'),
+  body('name')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Name must be between 2 and 100 characters'),
+  body('phone')
+    .optional()
+    .matches(/^\+?[\d\s\-()]+$/)
+    .withMessage('Please provide a valid phone number'),
+  body('roles')
+    .optional()
+    .isArray({ min: 1 })
+    .withMessage('At least one role must be specified'),
+  body('roles.*')
+    .isIn(['ADMIN', 'EXECUTIVE', 'DIRECTOR', 'MANAGER', 'SALESMAN'])
+    .withMessage('Invalid role specified'),
+  body('department').optional().trim(),
+  body('designation').optional().trim(),
+  body('isActive').optional().isBoolean().withMessage('isActive must be a boolean'),
 ];
 
 /**
@@ -198,7 +237,10 @@ module.exports = {
   loginValidation,
   forgotPasswordValidation,
   resetPasswordValidation,
+  changePasswordValidation,
   updateProfileValidation,
+  createUserValidation,
+  updateUserValidation,
   createLeadValidation,
   updateLeadValidation,
   idValidation,

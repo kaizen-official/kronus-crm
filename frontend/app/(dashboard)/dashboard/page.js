@@ -43,7 +43,7 @@ export default function DashboardPage() {
         setStats({
           totalLeads: leadStats.totalLeads,
           activeUsers: userStats.activeUsers,
-          pipelineValue: leadStats.totalEstimatedValue,
+          pipelineValue: leadStats.totalValue,
           conversionRate: conversionRate,
           leadsByStatus: leadStats.leadsByStatus,
           leadsBySource: leadStats.leadsBySource,

@@ -16,14 +16,14 @@ const getProfile = async (req, res, next) => {
       select: {
         id: true,
         email: true,
-        firstName: true,
-        lastName: true,
+        name: true,
         phone: true,
-        role: true,
+        roles: true,
         isActive: true,
         department: true,
         designation: true,
         profileImage: true,
+        lastLoginAt: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -45,13 +45,12 @@ const getProfile = async (req, res, next) => {
  */
 const updateProfile = async (req, res, next) => {
   try {
-    const { firstName, lastName, phone, department, designation, profileImage } = req.body;
+    const { name, phone, department, designation, profileImage } = req.body;
 
     const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
       data: {
-        ...(firstName && { firstName }),
-        ...(lastName && { lastName }),
+        ...(name && { name }),
         ...(phone !== undefined && { phone }),
         ...(department !== undefined && { department }),
         ...(designation !== undefined && { designation }),
@@ -60,14 +59,14 @@ const updateProfile = async (req, res, next) => {
       select: {
         id: true,
         email: true,
-        firstName: true,
-        lastName: true,
+        name: true,
         phone: true,
-        role: true,
+        roles: true,
         isActive: true,
         department: true,
         designation: true,
         profileImage: true,
+        lastLoginAt: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -94,7 +93,7 @@ const getUsers = async (req, res, next) => {
       page = 1,
       limit = 10,
       search = '',
-      role,
+      role, // Filtering by a single role match
       isActive,
       sortBy = 'createdAt',
       sortOrder = 'desc',
@@ -106,12 +105,11 @@ const getUsers = async (req, res, next) => {
     const where = {
       ...(search && {
         OR: [
-          { firstName: { contains: search, mode: 'insensitive' } },
-          { lastName: { contains: search, mode: 'insensitive' } },
+          { name: { contains: search, mode: 'insensitive' } },
           { email: { contains: search, mode: 'insensitive' } },
         ],
       }),
-      ...(role && { role }),
+      ...(role && { roles: { has: role } }),
       ...(isActive !== undefined && { isActive: isActive === 'true' }),
     };
 
@@ -125,14 +123,14 @@ const getUsers = async (req, res, next) => {
         select: {
           id: true,
           email: true,
-          firstName: true,
-          lastName: true,
+          name: true,
           phone: true,
-          role: true,
+          roles: true,
           isActive: true,
           department: true,
           designation: true,
           profileImage: true,
+          lastLoginAt: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -171,14 +169,14 @@ const getUserById = async (req, res, next) => {
       select: {
         id: true,
         email: true,
-        firstName: true,
-        lastName: true,
+        name: true,
         phone: true,
-        role: true,
+        roles: true,
         isActive: true,
         department: true,
         designation: true,
         profileImage: true,
+        lastLoginAt: true,
         createdAt: true,
         updatedAt: true,
         _count: {
@@ -213,7 +211,7 @@ const getUserById = async (req, res, next) => {
  */
 const createUser = async (req, res, next) => {
   try {
-    const { email, firstName, lastName, phone, role, department, designation } = req.body;
+    const { email, name, phone, roles, department, designation } = req.body;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -239,20 +237,18 @@ const createUser = async (req, res, next) => {
       data: {
         email,
         password: hashedPassword,
-        firstName,
-        lastName,
+        name,
         phone: phone || null,
-        role: role || ROLES.USER,
+        roles: roles || [ROLES.SALESMAN],
         department: department || null,
         designation: designation || null,
       },
       select: {
         id: true,
         email: true,
-        firstName: true,
-        lastName: true,
+        name: true,
         phone: true,
-        role: true,
+        roles: true,
         isActive: true,
         department: true,
         designation: true,
@@ -262,7 +258,7 @@ const createUser = async (req, res, next) => {
 
     // Send welcome email with temporary password
     try {
-      await sendWelcomeEmail(user.email, user.firstName, tempPassword);
+      await sendWelcomeEmail(user.email, user.name, tempPassword);
     } catch (emailError) {
       console.error('Failed to send welcome email:', emailError);
       // Don't fail the request if email fails
@@ -286,7 +282,7 @@ const createUser = async (req, res, next) => {
 const updateUser = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { firstName, lastName, phone, role, department, designation, isActive } = req.body;
+    const { name, phone, roles, department, designation, isActive } = req.body;
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
@@ -300,11 +296,11 @@ const updateUser = async (req, res, next) => {
       });
     }
 
-    // Prevent modifying super admin by non-super admin
-    if (existingUser.role === ROLES.SUPER_ADMIN && req.user.role !== ROLES.SUPER_ADMIN) {
+    // Prevent modifying admin by non-admin
+    if (existingUser.roles.includes(ROLES.ADMIN) && !req.user.roles.includes(ROLES.ADMIN)) {
       return res.status(HTTP_STATUS.FORBIDDEN).json({
         success: false,
-        message: 'You cannot modify a super admin account',
+        message: 'You cannot modify an admin account',
       });
     }
 
@@ -312,10 +308,9 @@ const updateUser = async (req, res, next) => {
     const updatedUser = await prisma.user.update({
       where: { id },
       data: {
-        ...(firstName && { firstName }),
-        ...(lastName && { lastName }),
+        ...(name && { name }),
         ...(phone !== undefined && { phone }),
-        ...(role && { role }),
+        ...(roles && { roles }),
         ...(department !== undefined && { department }),
         ...(designation !== undefined && { designation }),
         ...(isActive !== undefined && { isActive }),
@@ -323,14 +318,14 @@ const updateUser = async (req, res, next) => {
       select: {
         id: true,
         email: true,
-        firstName: true,
-        lastName: true,
+        name: true,
         phone: true,
-        role: true,
+        roles: true,
         isActive: true,
         department: true,
         designation: true,
         profileImage: true,
+        lastLoginAt: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -367,11 +362,11 @@ const deleteUser = async (req, res, next) => {
       });
     }
 
-    // Prevent deleting super admin
-    if (user.role === ROLES.SUPER_ADMIN) {
+    // Prevent deleting admin
+    if (user.roles.includes(ROLES.ADMIN)) {
       return res.status(HTTP_STATUS.FORBIDDEN).json({
         success: false,
-        message: 'Cannot delete super admin account',
+        message: 'Cannot delete admin account',
       });
     }
 
@@ -405,19 +400,10 @@ const deleteUser = async (req, res, next) => {
  */
 const getUserStats = async (req, res, next) => {
   try {
-    const [totalUsers, activeUsers, usersByRole] = await Promise.all([
+    const [totalUsers, activeUsers] = await Promise.all([
       prisma.user.count(),
       prisma.user.count({ where: { isActive: true } }),
-      prisma.user.groupBy({
-        by: ['role'],
-        _count: true,
-      }),
     ]);
-
-    const roleStats = usersByRole.reduce((acc, curr) => {
-      acc[curr.role] = curr._count;
-      return acc;
-    }, {});
 
     res.status(HTTP_STATUS.OK).json({
       success: true,
@@ -425,7 +411,6 @@ const getUserStats = async (req, res, next) => {
         totalUsers,
         activeUsers,
         inactiveUsers: totalUsers - activeUsers,
-        usersByRole: roleStats,
       },
     });
   } catch (error) {

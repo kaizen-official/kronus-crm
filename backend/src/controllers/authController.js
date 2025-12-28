@@ -12,7 +12,7 @@ const { sendPasswordResetEmail } = require('../utils/emailUtils');
  */
 const register = async (req, res, next) => {
   try {
-    const { email, password, firstName, lastName, phone } = req.body;
+    const { email, password, name, phone } = req.body;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -35,18 +35,16 @@ const register = async (req, res, next) => {
       data: {
         email,
         password: hashedPassword,
-        firstName,
-        lastName,
+        name,
         phone: phone || null,
-        role: ROLES.USER,
+        roles: [ROLES.SALESMAN],
       },
       select: {
         id: true,
         email: true,
-        firstName: true,
-        lastName: true,
+        name: true,
         phone: true,
-        role: true,
+        roles: true,
         isActive: true,
         createdAt: true,
       },
@@ -109,6 +107,12 @@ const login = async (req, res, next) => {
       });
     }
 
+    // Update lastLoginAt
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
 
@@ -142,14 +146,14 @@ const getMe = async (req, res, next) => {
       select: {
         id: true,
         email: true,
-        firstName: true,
-        lastName: true,
+        name: true,
         phone: true,
-        role: true,
+        roles: true,
         isActive: true,
         department: true,
         designation: true,
         profileImage: true,
+        lastLoginAt: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -204,7 +208,7 @@ const forgotPassword = async (req, res, next) => {
 
     try {
       // Send email
-      await sendPasswordResetEmail(user.email, resetUrl, user.firstName);
+      await sendPasswordResetEmail(user.email, resetUrl, user.name);
 
       res.status(HTTP_STATUS.OK).json({
         success: true,
