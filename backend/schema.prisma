@@ -17,7 +17,7 @@ model User {
   name              String
   phone             String?
   roles             Role[]   @default([SALESMAN])
-  isActive          Boolean  @default(true)
+  isActive          Boolean  @default(false)
   lastLoginAt       DateTime?
   profileImage      String?
   department        String?

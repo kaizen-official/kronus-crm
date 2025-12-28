@@ -57,7 +57,7 @@ export default function UserForm({ initialData, onSubmit, loading }) {
   };
 
   const ROLE_OPTIONS = [
-    { label: "Admin", value: "ADMIN" },
+    // { label: "Admin", value: "ADMIN" },
     { label: "Executive", value: "EXECUTIVE" },
     { label: "Director", value: "DIRECTOR" },
     { label: "Manager", value: "MANAGER" },

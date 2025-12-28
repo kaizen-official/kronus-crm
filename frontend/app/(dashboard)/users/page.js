@@ -16,12 +16,12 @@ import UserForm from "@/src/components/users/UserForm";
 
 // Debounce hook
 function useDebounce(value, delay) {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-  useEffect(() => {
-    const handler = setTimeout(() => setDebouncedValue(value), delay);
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-  return debouncedValue;
+    const [debouncedValue, setDebouncedValue] = useState(value);
+    useEffect(() => {
+        const handler = setTimeout(() => setDebouncedValue(value), delay);
+        return () => clearTimeout(handler);
+    }, [value, delay]);
+    return debouncedValue;
 }
 
 export default function UsersPage() {
@@ -29,7 +29,7 @@ export default function UsersPage() {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({});
-    
+
     // Pagination & Filters
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -48,21 +48,21 @@ export default function UsersPage() {
 
     useEffect(() => {
         const checkAccess = () => {
-             const userData = Cookies.get("user");
-             if (!userData) {
-                 router.push("/login");
-                 return false;
-             }
-             const user = JSON.parse(userData);
-             if (!user.roles || !user.roles.includes("ADMIN")) {
-                 router.push("/dashboard");
-                 return false;
-             }
-             return true;
+            const userData = Cookies.get("user");
+            if (!userData) {
+                router.push("/login");
+                return false;
+            }
+            const user = JSON.parse(userData);
+            if (!user.roles || !user.roles.includes("ADMIN")) {
+                router.push("/dashboard");
+                return false;
+            }
+            return true;
         }
-        
+
         if (!checkAccess()) return;
-        
+
         const fetchUsers = async () => {
             setLoading(true);
             try {
@@ -97,7 +97,7 @@ export default function UsersPage() {
             // but here we can just reload the current view logic or rely on router refresh
             // For now, simpler to toggle a refresh trigger or just call fetch manually if extracted.
             // Since effect depends on other vars, let's just cheat and toggle page or reload
-            window.location.reload(); 
+            window.location.reload();
         } catch (error) {
             console.error("Create failed", error);
             alert(error.response?.data?.message || "Failed to create user");
@@ -110,8 +110,8 @@ export default function UsersPage() {
             setEditingUser(null);
             window.location.reload();
         } catch (error) {
-           console.error("Update failed", error);
-           alert(error.response?.data?.message || "Failed to update user");
+            console.error("Update failed", error);
+            alert(error.response?.data?.message || "Failed to update user");
         }
     };
 
@@ -127,8 +127,8 @@ export default function UsersPage() {
                 </div>
             </div>
 
-             {/* Filters */}
-             <div className="flex flex-col md:flex-row gap-4 mb-6">
+            {/* Filters */}
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
                 <div className="w-full md:w-1/3 relative">
                     <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <Input
@@ -139,15 +139,15 @@ export default function UsersPage() {
                     />
                 </div>
                 <div className="w-full md:w-1/4">
-                    <Select 
+                    <Select
                         placeholder="Filter by Role"
                         className="py-2.5!"
                         options={[
-                            { label: "Admin", value: "ADMIN" },
+                            // { label: "Admin", value: "ADMIN" },
                             { label: "Executive", value: "EXECUTIVE" },
                             { label: "Director", value: "DIRECTOR" },
                             { label: "Manager", value: "MANAGER" },
-                            { label: "Salesman", value: "SALESMAN" },
+                            { label: "Salesman", value: "SALESMAN" }
                         ]}
                         value={roleFilter}
                         onChange={(e) => setRoleFilter(e.target.value)}
@@ -156,7 +156,7 @@ export default function UsersPage() {
             </div>
 
             <Card className="p-0 overflow-hidden min-h-[244px] relative">
-                  <div className="overflow-x-auto">
+                <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse min-w-[800px]">
                         <thead>
                             <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase text-gray-500 font-semibold tracking-wider">
@@ -170,8 +170,8 @@ export default function UsersPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                             {/* Loading Overlay */}
-                             <AnimatePresence>
+                            {/* Loading Overlay */}
+                            <AnimatePresence>
                                 {loading && (
                                     <motion.tr
                                         initial={{ opacity: 0 }}
@@ -186,11 +186,11 @@ export default function UsersPage() {
                                 )}
                             </AnimatePresence>
 
-                             {!loading && users.length === 0 ? (
+                            {!loading && users.length === 0 ? (
                                 <tr>
                                     <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
                                         <div className="flex flex-col items-center gap-2">
-                                            <HiSearch size={24} className="text-gray-300"/>
+                                            <HiSearch size={24} className="text-gray-300" />
                                             <p>No users found matching your criteria.</p>
                                         </div>
                                     </td>
@@ -216,15 +216,14 @@ export default function UsersPage() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                                user.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                                            }`}>
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${user.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                                                }`}>
                                                 {user.isActive ? "Active" : "Inactive"}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <Button 
-                                                variant="ghost" 
+                                            <Button
+                                                variant="ghost"
                                                 size="sm"
                                                 onClick={() => setEditingUser(user)}
                                             >
@@ -238,23 +237,23 @@ export default function UsersPage() {
                     </table>
                 </div>
 
-                 {/* Pagination */}
-                 <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 text-sm text-gray-500 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                {/* Pagination */}
+                <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 text-sm text-gray-500 flex flex-col sm:flex-row gap-4 justify-between items-center">
                     <span>
                         Page {stats.currentPage || 1} of {Math.max(1, totalPages)} <span className="text-gray-400 mx-1">|</span> {stats.totalItems || 0} users
                     </span>
                     <div className="flex gap-2">
-                        <Button 
-                            variant="outline" 
-                            size="sm" 
+                        <Button
+                            variant="outline"
+                            size="sm"
                             disabled={page === 1 || loading}
                             onClick={() => setPage(p => Math.max(1, p - 1))}
                         >
-                           <HiChevronLeft /> Previous
+                            <HiChevronLeft /> Previous
                         </Button>
-                        <Button 
-                            variant="outline" 
-                            size="sm" 
+                        <Button
+                            variant="outline"
+                            size="sm"
                             disabled={page === totalPages || loading}
                             onClick={() => setPage(p => Math.min(totalPages || 1, p + 1))}
                         >
@@ -272,10 +271,10 @@ export default function UsersPage() {
             {/* Edit User Modal */}
             <Modal isOpen={!!editingUser} onClose={() => setEditingUser(null)} title="Edit User">
                 {editingUser && (
-                    <UserForm 
-                        initialData={editingUser} 
-                        onSubmit={handleUpdate} 
-                        loading={loading} 
+                    <UserForm
+                        initialData={editingUser}
+                        onSubmit={handleUpdate}
+                        loading={loading}
                     />
                 )}
             </Modal>
@@ -301,14 +300,14 @@ function RoleBadge({ role }) {
 
 function OnlineDot({ lastLoginAt }) {
     if (!lastLoginAt) return <span className="w-2 h-2 rounded-full bg-gray-300" title="Never logged in"></span>;
-    
+
     const lastLogin = new Date(lastLoginAt);
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     const isOnline = lastLogin > oneHourAgo;
 
     return (
-        <span 
-            className={`w-2 h-2 rounded-full ${isOnline ? "bg-green-500 animate-pulse" : "bg-gray-300"}`} 
+        <span
+            className={`w-2 h-2 rounded-full ${isOnline ? "bg-green-500 animate-pulse" : "bg-gray-300"}`}
             title={isOnline ? "Online" : `Last seen: ${lastLogin.toLocaleString()}`}
         ></span>
     );
