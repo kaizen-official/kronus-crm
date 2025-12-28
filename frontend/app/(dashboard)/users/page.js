@@ -54,10 +54,10 @@ export default function UsersPage() {
                  return false;
              }
              const user = JSON.parse(userData);
-            //  if (!user.roles || !user.roles.includes("ADMIN")) {
-            //      router.push("/dashboard");
-            //      return false;
-            //  }
+             if (!user.roles || !user.roles.includes("ADMIN")) {
+                 router.push("/dashboard");
+                 return false;
+             }
              return true;
         }
         
