@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { HiPlus, HiSearch, HiFilter, HiChevronLeft, HiChevronRight } from "react-icons/hi";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "@/src/services/api";
+import { toast } from "react-hot-toast";
 import Heading from "@/src/components/ui/Heading";
 import Button from "@/src/components/ui/Button";
 import Card from "@/src/components/ui/Card";
@@ -62,8 +63,10 @@ export default function LeadsPage() {
             setClosingLead(null);
             setCloseReason("");
             fetchLeads();
+            toast.success(`Lead marked as ${status}`);
         } catch (error) {
             console.error("Failed to close lead", error);
+            toast.error(error.response?.data?.message || "Failed to close lead");
         }
     };
 
@@ -82,8 +85,10 @@ export default function LeadsPage() {
             setReopeningLead(null);
             setReopenReason("");
             fetchLeads();
+            toast.success("Lead reopened successfully");
         } catch (error) {
             console.error("Failed to reopen lead", error);
+            toast.error(error.response?.data?.message || "Failed to reopen lead");
         }
     };
 
@@ -133,8 +138,10 @@ export default function LeadsPage() {
             await api.post("/leads", data);
             setIsCreateOpen(false);
             fetchLeads();
+            toast.success("Lead created successfully");
         } catch (error) {
             console.error("Create failed", error);
+            toast.error(error.response?.data?.message || "Failed to create lead");
         }
     };
 
@@ -143,8 +150,10 @@ export default function LeadsPage() {
             await api.put(`/leads/${editingLead.id}`, data);
             setEditingLead(null);
             fetchLeads(); // Refetch to prevent stale data
+            toast.success("Lead updated successfully");
         } catch (error) {
             console.error("Update failed", error);
+            toast.error(error.response?.data?.message || "Failed to update lead");
         }
     };
 
@@ -377,7 +386,11 @@ export default function LeadsPage() {
                 title="Lead Details"
                 size="lg"
             >
-                <LeadDetail lead={selectedLead} />
+                {/* 
+                  Pass a key to force re-mounting when selectedLead changes, 
+                  ensuring fresh state and eliminating duplicate calls from old instances 
+                */}
+                <LeadDetail key={selectedLead?.id} lead={selectedLead} />
                 <div className="mt-8 pt-6 border-t border-gray-100 flex justify-end">
                     <Button variant="outline" onClick={() => setSelectedLead(null)}>Close</Button>
                     <Button

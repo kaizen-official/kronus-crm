@@ -130,3 +130,16 @@ enum ActivityType {
   TASK
   FOLLOW_UP
 }
+
+model SystemLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  level     String   // "ERROR", "WARN", "INFO"
+  message   String
+  stack     String?
+  path      String?
+  method    String?
+  userId    String?
+  timestamp DateTime @default(now())
+  
+  @@map("system_logs")
+}

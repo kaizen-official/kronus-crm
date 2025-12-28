@@ -1,4 +1,5 @@
 import { Montserrat, Merriweather } from "next/font/google";
+import { Toaster } from "react-hot-toast";
 import "./globals.css";
 
 const montserrat = Montserrat({
@@ -23,6 +24,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${montserrat.variable} ${merriweather.variable} antialiased`}
       >
+        <Toaster position="top-right" />
         {children}
       </body>
     </html>

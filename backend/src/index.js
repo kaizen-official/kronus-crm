@@ -79,11 +79,11 @@ const server = app.listen(PORT, () => {
   console.log(`
 ╔═══════════════════════════════════════════╗
 ║                                           ║
-║     🚀 Kronus CRM Backend Server         ║
+║       Kronus CRM Backend Server           ║
 ║                                           ║
-║     Environment: ${process.env.NODE_ENV || 'development'}                  ║
-║     Port: ${PORT}                              ║
-║     API Base: http://localhost:${PORT}/api    ║
+║     Environment: ${process.env.NODE_ENV}              ║
+║     Port: ${PORT}                            ║
+║     API Base: http://localhost:${PORT}/api   ║
 ║                                           ║
 ╚═══════════════════════════════════════════╝
   `);

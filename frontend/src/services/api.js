@@ -26,6 +26,19 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Standardize validation errors for Frontend Toasts
+    if (error.response && error.response.status === 422 && error.response.data.errors) {
+       // Backend sends errors as [{ "field": "message" }, ...]
+       // We transform this into a single string: "field: message, ..."
+       const errorMessages = error.response.data.errors.map(errObj => {
+          const key = Object.keys(errObj)[0];
+          return `${errObj[key]}`; // Or `${key}: ${errObj[key]}` if you want the field name
+       }).join('\n');
+       
+       // Overwrite the message so generic catch blocks pick up the detailed list
+       error.response.data.message = errorMessages; 
+    }
+
     if (error.response && error.response.status === 401) {
       // Handle unauthorized access (e.g., redirect to login)
       Cookies.remove("token");

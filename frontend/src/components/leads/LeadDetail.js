@@ -5,6 +5,8 @@ import api from "@/src/services/api";
 import Heading from "@/src/components/ui/Heading";
 import { HiMail, HiPhone, HiOfficeBuilding, HiCalendar, HiCurrencyDollar } from "react-icons/hi";
 
+import { toast } from "react-hot-toast";
+
 export default function LeadDetail({ lead: initialLead }) {
     const [lead, setLead] = useState(initialLead);
     const [loadingActivities, setLoadingActivities] = useState(true);
@@ -19,6 +21,7 @@ export default function LeadDetail({ lead: initialLead }) {
             setLead(response.data.data);
         } catch (error) {
             console.error("Failed to fetch lead details", error);
+            // toast.error("Failed to load lead details"); // Suppressed to avoid duplicate toasts on mount
         } finally {
             setLoadingActivities(false);
         }
@@ -35,8 +38,10 @@ export default function LeadDetail({ lead: initialLead }) {
             await api.put(`/leads/${lead.id}`, { activityNote: newNote });
             setNewNote("");
             fetchFullDetails(); // Refresh activities
+            toast.success("Note added");
         } catch (error) {
             console.error("Failed to add note", error);
+            toast.error(error.response?.data?.message || "Failed to add note");
         } finally {
             setSavingNote(false);
         }
