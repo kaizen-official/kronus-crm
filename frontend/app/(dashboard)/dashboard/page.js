@@ -83,14 +83,14 @@ export default function DashboardPage() {
   ];
 
   if (loading) {
-    return <div className="p-8 text-center text-gray-400 font-bold animate-pulse uppercase tracking-[0.2em]">Syncing Intelligence Hub...</div>;
+    return <div className="p-8 text-center text-gray-400 font-bold animate-pulse uppercase tracking-[0.2em]">Loading Kronus CRM Dashboard...</div>;
   }
 
   return (
     <div className="space-y-12 max-w-7xl mx-auto pb-20">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-2">
-          <h1 className="text-4xl font-black text-gray-900 tracking-tighter">Command Center</h1>
+          <h1 className="text-4xl font-black text-gray-900 tracking-tighter">Kronus CRM Dashboard</h1>
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
             <p className="text-gray-400 font-bold uppercase tracking-widest text-[11px] leading-none">Security Protocol: {userRoles[0]} Level Access</p>
