@@ -1,14 +1,14 @@
 {
   "name": "kronus-crm",
-  "version": "0.5.3",
+  "version": "0.6.0",
   "description": "This is official CRM of Kronus Infratech and Consultants developed by Kaizen",
-  "homepage": "https://github.com/kaizen-official/kronus-crm-backend#readme",
+  "homepage": "https://github.com/kaizen-official/kronus-crm#readme",
   "bugs": {
-    "url": "https://github.com/kaizen-official/kronus-crm-backend/issues"
+    "url": "https://github.com/kaizen-official/kronus-crm/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kaizen-official/kronus-crm-backend.git"
+    "url": "git+https://github.com/kaizen-official/kronus-crm.git"
   },
   "license": "ISC",
   "author": "Kaizen",

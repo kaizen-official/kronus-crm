@@ -500,15 +500,22 @@ const deleteLead = async (req, res, next) => {
  */
 const getLeadStats = async (req, res, next) => {
   try {
+    const isSalesman = req.user.roles.includes(ROLES.SALESMAN) && req.user.roles.length === 1;
+    const isManager = req.user.roles.includes(ROLES.MANAGER) || req.user.roles.includes(ROLES.EXECUTIVE) || req.user.roles.includes(ROLES.DIRECTOR) || req.user.roles.includes(ROLES.ADMIN);
+    const isAdmin = req.user.roles.includes(ROLES.ADMIN) || req.user.roles.includes(ROLES.DIRECTOR) || req.user.roles.includes(ROLES.EXECUTIVE);
+
     const where = {};
 
-    // Non-admin users can only see their stats
-    if (!req.user.roles.includes(ROLES.ADMIN)) {
+    // Base filtering based on role
+    // Salesmen only see their own
+    if (isSalesman) {
       where.OR = [
         { createdById: req.user.id },
         { assignedToId: req.user.id },
       ];
     }
+    // Managers and Admins see everything for now, but we can refine this later if "Team" scope is added.
+    // For now, if NOT a pure salesman, you see global stats.
 
     const [
       totalLeads,
@@ -556,6 +563,90 @@ const getLeadStats = async (req, res, next) => {
       return acc;
     }, {});
 
+    // Performance metrics for Managers/Admins
+    let performance = [];
+    let monthlyTrends = [];
+    let valueBreakdown = { won: 0, lost: 0, pipeline: 0 };
+
+    if (isManager) {
+      const [users, allLeads] = await Promise.all([
+        prisma.user.findMany({
+          where: {
+            roles: { hasSome: [ROLES.SALESMAN, ROLES.MANAGER] },
+            isActive: true
+          },
+          select: {
+            id: true,
+            name: true,
+            assignedLeads: {
+              select: {
+                status: true,
+                value: true,
+                createdAt: true,
+              }
+            }
+          }
+        }),
+        prisma.lead.findMany({
+          where,
+          select: {
+            status: true,
+            value: true,
+            createdAt: true,
+          }
+        })
+      ]);
+
+      // Calculate Performance per User
+      performance = users.map(user => {
+        const totalAssigned = user.assignedLeads.length;
+        const wonLeads = user.assignedLeads.filter(l => l.status === 'WON').length;
+        const lostLeads = user.assignedLeads.filter(l => l.status === 'LOST').length;
+        const pipelineValue = user.assignedLeads.reduce((sum, l) => sum + (l.value || 0), 0);
+        
+        const closeRate = totalAssigned > 0 ? ((wonLeads / totalAssigned) * 100).toFixed(1) : "0.0";
+        const loseRate = totalAssigned > 0 ? ((lostLeads / totalAssigned) * 100).toFixed(1) : "0.0";
+
+        return {
+          userId: user.id,
+          name: user.name,
+          totalLeads: totalAssigned,
+          wonLeads,
+          lostLeads,
+          closeRate,
+          loseRate,
+          pipelineValue
+        };
+      }).sort((a, b) => b.totalLeads - a.totalLeads);
+
+      // Calculate Monthly Trends (Last 6 Months)
+      const months = [];
+      for (let i = 5; i >= 0; i--) {
+        const date = new Date();
+        date.setMonth(date.getMonth() - i);
+        months.push(date.toLocaleString('default', { month: 'short' }));
+      }
+
+      const trendMap = months.reduce((acc, month) => {
+        acc[month] = 0;
+        return acc;
+      }, {});
+
+      allLeads.forEach(lead => {
+        const month = new Date(lead.createdAt).toLocaleString('default', { month: 'short' });
+        if (trendMap[month] !== undefined) {
+          trendMap[month]++;
+        }
+
+        // Value Breakdown
+        if (lead.status === 'WON') valueBreakdown.won += (lead.value || 0);
+        else if (lead.status === 'LOST') valueBreakdown.lost += (lead.value || 0);
+        else valueBreakdown.pipeline += (lead.value || 0);
+      });
+
+      monthlyTrends = Object.entries(trendMap).map(([month, count]) => ({ month, count }));
+    }
+
     res.status(HTTP_STATUS.OK).json({
       success: true,
       data: {
@@ -564,6 +655,9 @@ const getLeadStats = async (req, res, next) => {
         leadsByStatus: statusStats,
         leadsByPriority: priorityStats,
         leadsBySource: sourceStats,
+        performance: performance.length > 0 ? performance : undefined,
+        monthlyTrends: monthlyTrends.length > 0 ? monthlyTrends : undefined,
+        valueBreakdown: isManager ? valueBreakdown : undefined
       },
     });
   } catch (error) {

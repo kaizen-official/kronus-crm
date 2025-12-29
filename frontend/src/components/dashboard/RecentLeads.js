@@ -7,42 +7,52 @@ import Card from "@/src/components/ui/Card";
 export default function RecentLeads({ leads }) {
     if (!leads || leads.length === 0) {
         return (
-            <Card className="h-full min-h-[200px] flex items-center justify-center text-gray-400">
-                No recent leads found.
+            <Card className="h-full min-h-[200px] flex items-center justify-center text-gray-400 border-none shadow-xl shadow-gray-200/50 rounded-3xl">
+                <p className="italic font-medium">No recent leads found.</p>
             </Card>
         );
     }
 
     return (
-        <Card className="h-full">
-            <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-gray-900">Recent Leads</h3>
-                <Link href="/leads" className="text-sm text-brand-primary hover:underline flex items-center gap-1">
-                    View All <HiArrowRight />
+        <Card className="h-full p-8 border-none shadow-xl shadow-gray-200/50 rounded-3xl overflow-hidden">
+            <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+                        <HiArrowRight className="-rotate-45" />
+                    </div>
+                    <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight">Recent Activity</h3>
+                </div>
+                <Link href="/leads" className="text-xs font-black text-indigo-600 hover:text-indigo-800 uppercase tracking-widest flex items-center gap-2 transition-colors bg-indigo-50 px-4 py-2 rounded-lg">
+                    Full Pipeline <HiArrowRight />
                 </Link>
             </div>
 
-            <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
+            <div className="overflow-x-auto -mx-8">
+                <table className="w-full text-left">
                     <thead>
-                        <tr className="border-b border-gray-100 text-gray-500">
-                            <th className="pb-3 font-medium">Name</th>
-                            <th className="pb-3 font-medium">Property</th>
-                            <th className="pb-3 font-medium">Status</th>
-                            <th className="pb-3 font-medium text-right">Value</th>
+                        <tr className="border-b border-gray-100/50 text-gray-400">
+                            <th className="px-8 pb-4 text-[10px] font-black uppercase tracking-widest">Lead Name</th>
+                            <th className="pb-4 text-[10px] font-black uppercase tracking-widest">Property Interested</th>
+                            <th className="pb-4 text-[10px] font-black uppercase tracking-widest">Pipeline Status</th>
+                            <th className="px-8 pb-4 text-[10px] font-black uppercase tracking-widest text-right">Estimated Value</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-50">
+                    <tbody className="divide-y divide-gray-50/50">
                         {leads.map((lead) => (
-                            <tr key={lead.id} className="group hover:bg-gray-50 transition-colors cursor-pointer">
-                                <td className="py-3 font-medium text-gray-900">
-                                    {lead.name}
+                            <tr key={lead.id} className="group hover:bg-gray-50/50 transition-all cursor-pointer">
+                                <td className="px-8 py-5">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-gray-100 text-gray-400 flex items-center justify-center font-bold text-xs group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                                            {lead.name[0].toUpperCase()}
+                                        </div>
+                                        <span className="font-bold text-gray-900">{lead.name}</span>
+                                    </div>
                                 </td>
-                                <td className="py-3 text-gray-600">{lead.property || "-"}</td>
-                                <td className="py-3">
+                                <td className="py-5 text-sm font-bold text-gray-500">{lead.property || <span className="text-gray-300 italic">No Selection</span>}</td>
+                                <td className="py-5">
                                     <StatusBadge status={lead.status} />
                                 </td>
-                                <td className="py-3 text-right font-medium text-gray-900">
+                                <td className="px-8 py-5 text-right font-black text-gray-900 tabular-nums">
                                     ₹{(lead.value || 0).toLocaleString()}
                                 </td>
                             </tr>
