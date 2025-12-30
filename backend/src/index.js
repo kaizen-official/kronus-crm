@@ -12,6 +12,7 @@ const {
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const leadRoutes = require('./routes/leadRoutes');
+const externalRoutes = require('./routes/externalRoutes');
 
 // Initialize express app
 const app = express();
@@ -51,6 +52,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/leads', leadRoutes);
+app.use('/api/external', externalRoutes);
 
 // Root route
 app.get('/', (req, res) => {
@@ -62,6 +64,7 @@ app.get('/', (req, res) => {
       auth: '/api/auth',
       users: '/api/users',
       leads: '/api/leads',
+      external: '/api/external',
     },
   });
 });
@@ -73,7 +76,7 @@ app.use(notFound);
 app.use(errorHandler);
 
 // Start server
-const PORT = process.env.PORT ;
+const PORT = process.env.PORT;
 
 const server = app.listen(PORT, () => {
   console.log(`

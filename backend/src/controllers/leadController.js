@@ -827,6 +827,70 @@ const deleteDocument = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc    Create lead from external source (99 Acres)
+ * @route   POST /api/external/leads/99acres
+ * @access  External (API Key)
+ */
+const createExternalLead = async (req, res, next) => {
+  try {
+    const { name, email, phone, property, value, description } = req.body;
+
+    if (!name || !phone || !property) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        message: 'Name, phone, and property are mandatory fields',
+      });
+    }
+
+    // Find a default system user (first admin) to act as creator
+    const systemUser = await prisma.user.findFirst({
+      where: { roles: { has: ROLES.ADMIN } },
+    });
+
+    if (!systemUser) {
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: 'System configuration error: No admin user found',
+      });
+    }
+
+    // Create the lead
+    const lead = await prisma.lead.create({
+      data: {
+        name,
+        email: email || null,
+        phone,
+        property,
+        value: value ? parseFloat(value) : null,
+        source: 'NINETY_NINE_ACRES',
+        status: 'NEW',
+        priority: 'MEDIUM',
+        createdById: systemUser.id,
+      },
+    });
+
+    // Log the activity
+    await prisma.activity.create({
+      data: {
+        type: 'NOTE',
+        title: 'External Lead Ingested',
+        description: `Lead automatically created via 99 Acres integration. ${description || ''}`,
+        userId: systemUser.id,
+        leadId: lead.id,
+      },
+    });
+
+    res.status(HTTP_STATUS.CREATED).json({
+      success: true,
+      data: lead,
+      message: 'Lead ingested successfully from 99 Acres',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getLeads,
   getLeadById,
@@ -836,4 +900,5 @@ module.exports = {
   getLeadStats,
   assignLead,
   deleteDocument,
+  createExternalLead,
 };
