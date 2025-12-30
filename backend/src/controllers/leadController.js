@@ -474,8 +474,8 @@ const deleteLead = async (req, res, next) => {
 
     // Explicitly delete related records first to avoid constraint issues in MongoDB if Prisma cascade fails
     await Promise.all([
-        prisma.activity.deleteMany({ where: { leadId: id } }),
-        prisma.document.deleteMany({ where: { leadId: id } })
+      prisma.activity.deleteMany({ where: { leadId: id } }),
+      prisma.document.deleteMany({ where: { leadId: id } })
     ]);
 
     // Finally delete the lead
@@ -605,7 +605,7 @@ const getLeadStats = async (req, res, next) => {
         const wonLeads = user.assignedLeads.filter(l => l.status === 'WON').length;
         const lostLeads = user.assignedLeads.filter(l => l.status === 'LOST').length;
         const pipelineValue = user.assignedLeads.reduce((sum, l) => sum + (l.value || 0), 0);
-        
+
         const closeRate = totalAssigned > 0 ? ((wonLeads / totalAssigned) * 100).toFixed(1) : "0.0";
         const loseRate = totalAssigned > 0 ? ((lostLeads / totalAssigned) * 100).toFixed(1) : "0.0";
 
@@ -680,7 +680,7 @@ const processLeadAnalytics = (leads) => {
   });
 
   const trends = Object.entries(trendMap).map(([month, count]) => ({ month, count }));
-  
+
   return { trends, breakdown };
 };
 

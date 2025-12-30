@@ -94,6 +94,7 @@ const createLeadValidation = [
     .isLength({ min: 2, max: 100 })
     .withMessage('Name must be between 2 and 100 characters'),
   body('email')
+    .trim()
     .optional({ checkFalsy: true })
     .isEmail()
     .withMessage('Please provide a valid email address'),
@@ -104,8 +105,9 @@ const createLeadValidation = [
     .matches(/^\+?[\d\s\-()]+$/)
     .withMessage('Please provide a valid phone number'),
   body('property')
-    .optional()
-    .trim(),
+    .trim()
+    .notEmpty()
+    .withMessage('Property is required'),
   body('source')
     .optional()
     .isIn(['WEBSITE', 'REFERRAL', 'INSTAGRAM', 'YOUTUBE', 'EMAIL', 'WHATSAPP', 'NINETY_NINE_ACRES', 'MAGICBRICKS', 'OLX', 'COLD_OUTREACH'])
@@ -146,6 +148,11 @@ const updateLeadValidation = [
     .trim()
     .matches(/^\+?[\d\s\-()]+$/)
     .withMessage('Please provide a valid phone number'),
+  body('property')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('Property cannot be empty'),
   body('source')
     .optional()
     .isIn(['WEBSITE', 'REFERRAL', 'INSTAGRAM', 'YOUTUBE', 'EMAIL', 'WHATSAPP', 'NINETY_NINE_ACRES', 'MAGICBRICKS', 'OLX', 'COLD_OUTREACH'])

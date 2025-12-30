@@ -14,9 +14,9 @@ import { HiCloudUpload, HiX, HiDocumentText, HiPhotograph } from "react-icons/hi
 
 const schema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(100, "Name too long"),
-  email: z.string().email("Invalid email address").optional().or(z.literal("")),
+  email: z.string().email("Invalid email address").optional().or(z.literal("")).or(z.null()),
   phone: z.string().regex(/^\+?[\d\s\-()]+$/, "Invalid phone number"),
-  property: z.string().optional(),
+  property: z.string().min(1, "Property is required"),
   status: z.enum(["NEW", "CONTACTED", "INTERESTED", "NOT_INTERESTED", "SITE_VISIT", "NEGOTIATION", "DOCUMENTATION", "WON", "LOST"]),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]),
   source: z.enum(["WEBSITE", "REFERRAL", "INSTAGRAM", "YOUTUBE", "EMAIL", "WHATSAPP", "NINETY_NINE_ACRES", "MAGICBRICKS", "OLX", "COLD_OUTREACH"]).optional(),
@@ -127,38 +127,38 @@ export default function LeadForm({ initialData, onSubmit, loading }) {
       <section className="space-y-4">
         <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-2">Lead Information</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <Input
+          <Input
             label="Customer Name"
             placeholder="e.g. Rahul Sharma"
             className="text-black!"
             error={errors.name?.message}
             {...register("name")}
-            />
-            <Input
+          />
+          <Input
             label="Contact Number"
             placeholder="+91 99999 00000"
             className="text-black!"
             error={errors.phone?.message}
             {...register("phone")}
-            />
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <Input
+          <Input
             label="Email Address"
             type="email"
             placeholder="rahul@example.com"
             className="text-black!"
             error={errors.email?.message}
             {...register("email")}
-            />
-            <Input
+          />
+          <Input
             label="Interested Property"
             placeholder="e.g. Kronus Heights, 3BHK"
             className="text-black!"
             error={errors.property?.message}
             {...register("property")}
-            />
+          />
         </div>
       </section>
 
@@ -166,75 +166,75 @@ export default function LeadForm({ initialData, onSubmit, loading }) {
       <section className="space-y-4 pt-2">
         <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-2">Deal Metrics</h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <Select
+          <Select
             label="Source"
             className="text-black!"
             options={[
-                { label: "Website", value: "WEBSITE" },
-                { label: "Referral", value: "REFERRAL" },
-                { label: "Instagram", value: "INSTAGRAM" },
-                { label: "YouTube", value: "YOUTUBE" },
-                { label: "WhatsApp", value: "WHATSAPP" },
-                { label: "99Acres", value: "NINETY_NINE_ACRES" },
-                { label: "MagicBricks", value: "MAGICBRICKS" },
-                { label: "OLX", value: "OLX" },
-                { label: "Cold Outreach", value: "COLD_OUTREACH" },
+              { label: "Website", value: "WEBSITE" },
+              { label: "Referral", value: "REFERRAL" },
+              { label: "Instagram", value: "INSTAGRAM" },
+              { label: "YouTube", value: "YOUTUBE" },
+              { label: "WhatsApp", value: "WHATSAPP" },
+              { label: "99Acres", value: "NINETY_NINE_ACRES" },
+              { label: "MagicBricks", value: "MAGICBRICKS" },
+              { label: "OLX", value: "OLX" },
+              { label: "Cold Outreach", value: "COLD_OUTREACH" },
             ]}
             error={errors.source?.message}
             {...register("source")}
-            />
-            <Select
+          />
+          <Select
             label="Pipeline Status"
             className="text-black!"
             options={[
-                { label: "New Lead", value: "NEW" },
-                { label: "Contacted", value: "CONTACTED" },
-                { label: "Interested", value: "INTERESTED" },
-                { label: "Site Visit Scheduled", value: "SITE_VISIT" },
-                { label: "Negotiation", value: "NEGOTIATION" },
-                { label: "Documentation", value: "DOCUMENTATION" },
-                { label: "Closed Won", value: "WON" },
-                { label: "Closed Lost", value: "LOST" },
+              { label: "New Lead", value: "NEW" },
+              { label: "Contacted", value: "CONTACTED" },
+              { label: "Interested", value: "INTERESTED" },
+              { label: "Site Visit Scheduled", value: "SITE_VISIT" },
+              { label: "Negotiation", value: "NEGOTIATION" },
+              { label: "Documentation", value: "DOCUMENTATION" },
+              { label: "Closed Won", value: "WON" },
+              { label: "Closed Lost", value: "LOST" },
             ]}
             error={errors.status?.message}
             {...register("status")}
-            />
-            <Select
+          />
+          <Select
             label="Priority Level"
             className="text-black!"
             options={[
-                { label: "Low", value: "LOW" },
-                { label: "Medium", value: "MEDIUM" },
-                { label: "High", value: "HIGH" },
-                { label: "Urgent", value: "URGENT" },
+              { label: "Low", value: "LOW" },
+              { label: "Medium", value: "MEDIUM" },
+              { label: "High", value: "HIGH" },
+              { label: "Urgent", value: "URGENT" },
             ]}
             error={errors.priority?.message}
             {...register("priority")}
-            />
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <Input
+          <Input
             label="Property Value (₹)"
             type="number"
             className="text-black!"
             error={errors.value?.message}
             {...register("value", { valueAsNumber: true })}
-            />
-            <Input
+          />
+          <Input
             label="Next Follow-up"
             type="date"
             className="text-black!"
             error={errors.followUpDate?.message}
             {...register("followUpDate")}
-            />
-            <Select
+          />
+          <Select
             label="Assign Agent"
             className="text-black!"
             options={[{ label: "Unassigned", value: "" }, ...userOptions]}
             error={errors.assignedToId?.message}
             {...register("assignedToId")}
-            />
+          />
         </div>
       </section>
 
@@ -251,11 +251,11 @@ export default function LeadForm({ initialData, onSubmit, loading }) {
           />
           <div className="flex flex-col items-center gap-3">
             <div className="w-12 h-12 bg-white rounded-lg shadow-sm flex items-center justify-center text-indigo-500 group-hover:scale-110 transition-transform">
-                <HiCloudUpload size={28} />
+              <HiCloudUpload size={28} />
             </div>
             <div>
-                <p className="text-sm font-bold text-gray-900">Upload property documents</p>
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">Images or PDF up to 10MB each</p>
+              <p className="text-sm font-bold text-gray-900">Upload property documents</p>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">Images or PDF up to 10MB each</p>
             </div>
           </div>
         </div>
@@ -267,7 +267,7 @@ export default function LeadForm({ initialData, onSubmit, loading }) {
               <div key={index} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-lg shadow-sm group">
                 <div className="flex items-center gap-3 overflow-hidden">
                   <div className="w-10 h-10 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-lg text-xs font-black">
-                    {file.type.includes('image') ? <HiPhotograph size={20}/> : <HiDocumentText size={20}/>}
+                    {file.type.includes('image') ? <HiPhotograph size={20} /> : <HiDocumentText size={20} />}
                   </div>
                   <div className="truncate">
                     <p className="text-xs font-bold text-gray-900 truncate max-w-[120px]">{file.name}</p>
@@ -295,10 +295,10 @@ export default function LeadForm({ initialData, onSubmit, loading }) {
       </section>
 
       <div className="flex justify-end gap-3 pt-6 border-t border-gray-50">
-        <Button 
-            type="submit" 
-            disabled={loading || uploading}
-            className="bg-indigo-600! hover:bg-indigo-700! px-10! py-4! text-base font-black shadow-xl shadow-indigo-100 rounded-lg!"
+        <Button
+          type="submit"
+          disabled={loading || uploading}
+          className="bg-indigo-600! hover:bg-indigo-700! px-10! py-4! text-base font-black shadow-xl shadow-indigo-100 rounded-lg!"
         >
           {loading || uploading ? "Processing..." : initialData ? "Save Changes" : "Create Lead"}
         </Button>
