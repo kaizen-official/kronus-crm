@@ -91,7 +91,7 @@ export default function LeadDetail({ lead: initialLead, onLeadDeleted }) {
         }
     };
 
-    const isAdmin = user && (user.roles || []).includes('ADMIN') || (user.roles || []).includes('EXECUTIVE') || (user.roles || []).includes('DIRECTOR');
+    const isAdmin = user && (user.roles.includes('ADMIN') || user.roles.includes('EXECUTIVE') || user.roles.includes('DIRECTOR'));
 
     if (!lead) return null;
 
