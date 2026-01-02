@@ -229,7 +229,7 @@ const createUser = async (req, res, next) => {
     const tempPassword = generatePassword(12);
 
     // Hash password
-    const salt = await bcrypt.genSalt(parseInt(process.env.BCRYPT_ROUNDS) || 12);
+    const salt = await bcrypt.genSalt(parseInt(process.env.BCRYPT_ROUNDS));
     const hashedPassword = await bcrypt.hash(tempPassword, salt);
 
     // Create user

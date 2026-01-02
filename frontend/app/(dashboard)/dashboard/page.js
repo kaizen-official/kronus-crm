@@ -9,12 +9,12 @@ import Card from "@/src/components/ui/Card";
 import { StatusChart, SourceChart, TrendLineChart, PerformanceRadar } from "@/src/components/dashboard/DashboardCharts";
 import RecentLeads from "@/src/components/dashboard/RecentLeads";
 import EmployeePerformance from "@/src/components/dashboard/EmployeePerformance";
-import Cookies from "js-cookie";
 import { formatNumber } from "@/src/utils/formatters";
+import { useAuth } from "@/src/contexts/AuthContext";
 
 export default function DashboardPage() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
   const [stats, setStats] = useState({
     totalLeads: 0,
     activeUsers: 0,
@@ -29,14 +29,9 @@ export default function DashboardPage() {
   const [recentLeads, setRecentLeads] = useState([]);
 
   useEffect(() => {
-    const userData = Cookies.get("user");
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
-
     const fetchDashboardData = async () => {
       try {
-        const userRoles = JSON.parse(Cookies.get("user") || "{}").roles || [];
+        const userRoles = user?.roles || [];
         const isManager = userRoles.includes('ADMIN') || userRoles.includes('MANAGER') || userRoles.includes('DIRECTOR') || userRoles.includes('EXECUTIVE');
 
         // Fetch stats concurrently with safety

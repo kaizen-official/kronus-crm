@@ -8,6 +8,7 @@ import { HiUser, HiShieldCheck, HiBell, HiKey } from "react-icons/hi";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "react-hot-toast";
+import { useAuth } from "@/src/contexts/AuthContext";
 
 import Heading from "@/src/components/ui/Heading";
 import Card from "@/src/components/ui/Card";
@@ -61,8 +62,8 @@ export default function SettingsPage() {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id
-                                        ? "bg-brand-primary/10 text-brand-primary"
-                                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                    ? "bg-brand-primary/10 text-brand-primary"
+                                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                                     }`}
                             >
                                 <span className="text-lg">{tab.icon}</span>
@@ -90,15 +91,16 @@ export default function SettingsPage() {
 }
 
 function ProfileForm() {
+    const { user: authUser, refreshUser } = useAuth();
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    
-    const { 
-        register, 
-        handleSubmit, 
+
+    const {
+        register,
+        handleSubmit,
         setValue,
-        formState: { errors } 
+        formState: { errors }
     } = useForm({
         resolver: zodResolver(profileSchema)
     });
@@ -127,13 +129,12 @@ function ProfileForm() {
             await api.put("/users/profile", data);
             toast.success("Profile updated successfully!");
 
-            // Update cookie
-            const currentUser = JSON.parse(Cookies.get("user") || "{}");
-            Cookies.set("user", JSON.stringify({ ...currentUser, ...data }));
-
-            // Sync state and exit edit mode
+            // Sync local state
             setUser({ ...user, ...data });
             setIsEditing(false);
+
+            // Refresh global auth state
+            refreshUser();
 
         } catch (error) {
             console.error(error);
@@ -281,11 +282,11 @@ function ProfileField({ label, name, register, isEditing, value, disabled, note,
 
 function SecurityForm() {
     const [loading, setLoading] = useState(false);
-    const { 
-        register, 
-        handleSubmit, 
-        reset, 
-        formState: { errors } 
+    const {
+        register,
+        handleSubmit,
+        reset,
+        formState: { errors }
     } = useForm({
         resolver: zodResolver(securitySchema)
     });

@@ -5,35 +5,17 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { HiHome, HiUsers, HiCurrencyRupee, HiCog, HiLogout, HiMenuAlt2 } from "react-icons/hi";
-import Cookies from "js-cookie";
 import clsx from "clsx";
+import { useAuth } from "@/src/contexts/AuthContext";
 
 export default function DashboardLayout({ children }) {
+    const { user, logout, loading } = useAuth();
     const pathname = usePathname();
     const router = useRouter();
     const [isSidebarOpen, setSidebarOpen] = useState(false);
-    const [user, setUser] = useState(null);
-
-    useEffect(() => {
-        // Check auth
-        const token = Cookies.get("token");
-        const userData = Cookies.get("user");
-
-        if (!token) {
-            router.push("/login");
-            return;
-        }
-
-        if (userData) {
-            setUser(JSON.parse(userData));
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Only run once on mount
 
     const handleLogout = () => {
-        Cookies.remove("token");
-        Cookies.remove("user");
-        router.push("/login");
+        logout();
     };
 
     const menuItems = [
@@ -43,7 +25,11 @@ export default function DashboardLayout({ children }) {
         { name: "Settings", href: "/settings", icon: HiCog },
     ];
 
-    if (!user) return null; // Or loading spinner
+    if (loading || !user) return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="w-10 h-10 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+        </div>
+    );
 
     return (
         <div className="min-h-screen bg-gray-50 flex">

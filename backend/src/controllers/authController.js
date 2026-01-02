@@ -27,7 +27,7 @@ const { sendPasswordResetEmail } = require('../utils/emailUtils');
 //     }
 
 //     // Hash password
-//     const salt = await bcrypt.genSalt(parseInt(process.env.BCRYPT_ROUNDS) || 12);
+//     const salt = await bcrypt.genSalt(parseInt(process.env.BCRYPT_ROUNDS));
 //     const hashedPassword = await bcrypt.hash(password, salt);
 
 //     // Create user
@@ -192,7 +192,7 @@ const forgotPassword = async (req, res, next) => {
     // Generate reset token
     const resetToken = generateResetToken();
     const hashedToken = hashToken(resetToken);
-    const resetExpire = new Date(Date.now() + parseInt(process.env.RESET_PASSWORD_EXPIRE) || 3600000); // 1 hour
+    const resetExpire = new Date(Date.now() + parseInt(process.env.RESET_PASSWORD_EXPIRE));
 
     // Save hashed token to database
     await prisma.user.update({
@@ -265,7 +265,7 @@ const resetPassword = async (req, res, next) => {
     }
 
     // Hash new password
-    const salt = await bcrypt.genSalt(parseInt(process.env.BCRYPT_ROUNDS) || 12);
+    const salt = await bcrypt.genSalt(parseInt(process.env.BCRYPT_ROUNDS));
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // Update password and clear reset token
@@ -312,7 +312,7 @@ const changePassword = async (req, res, next) => {
     }
 
     // Hash new password
-    const salt = await bcrypt.genSalt(parseInt(process.env.BCRYPT_ROUNDS) || 12);
+    const salt = await bcrypt.genSalt(parseInt(process.env.BCRYPT_ROUNDS));
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
     // Update password

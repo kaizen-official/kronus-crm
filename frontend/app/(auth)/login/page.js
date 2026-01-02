@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import { motion } from "framer-motion";
+import { useAuth } from "@/src/contexts/AuthContext";
 
 import BgLayout from "@/src/components/layout/BgLayout";
 import Card from "@/src/components/ui/Card";
@@ -22,6 +23,7 @@ const schema = z.object({
 });
 
 export default function Login() {
+    const { login: authLogin } = useAuth();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -40,12 +42,7 @@ export default function Login() {
         try {
             const response = await api.post("/auth/login", data);
             if (response.data.success) {
-                // Set token
-                Cookies.set("token", response.data.data.token, { expires: 7 });
-                Cookies.set("user", JSON.stringify(response.data.data.user), { expires: 7 });
-
-                // Redirect
-                router.push("/dashboard");
+                authLogin(response.data.data.user, response.data.data.token);
             }
         } catch (err) {
             setError(
@@ -94,11 +91,7 @@ export default function Login() {
                                 {...register("password")}
                             />
 
-                            <div className="flex items-center justify-between text-sm">
-                                <label className="flex items-center text-gray-600">
-                                    <input type="checkbox" className="mr-2 rounded border-gray-300 text-brand-primary focus:ring-brand-primary" />
-                                    Remember me
-                                </label>
+                            <div className="flex items-center justify-end text-sm">
                                 <Link href="/forgot-password" className="text-brand-primary hover:underline font-medium">
                                     Forgot Password?
                                 </Link>

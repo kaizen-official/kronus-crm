@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
 import { HiPlus, HiSearch, HiChevronLeft, HiChevronRight, HiTrash } from "react-icons/hi";
+import { useAuth } from "@/src/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "@/src/services/api";
 import Heading from "@/src/components/ui/Heading";
@@ -25,6 +25,7 @@ function useDebounce(value, delay) {
 }
 
 export default function UsersPage() {
+    const { user: currentUser } = useAuth();
     const router = useRouter();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -49,21 +50,10 @@ export default function UsersPage() {
     }, [debouncedSearch, roleFilter]);
 
     useEffect(() => {
-        const checkAccess = () => {
-            const userData = Cookies.get("user");
-            if (!userData) {
-                router.push("/login");
-                return false;
-            }
-            const user = JSON.parse(userData);
-            if (!user.roles || !user.roles.includes("ADMIN")) {
-                router.push("/dashboard");
-                return false;
-            }
-            return true;
+        if (!currentUser || !currentUser.roles.includes("ADMIN")) {
+            router.push("/dashboard");
+            return;
         }
-
-        if (!checkAccess()) return;
 
         const fetchUsers = async () => {
             setLoading(true);
@@ -116,7 +106,7 @@ export default function UsersPage() {
             alert(error.response?.data?.message || "Failed to update user");
         }
     };
-    
+
     const handleDeleteUser = async () => {
         if (!deletingUser) return;
         setIsDeleting(true);
@@ -313,18 +303,18 @@ export default function UsersPage() {
             >
                 <div className="space-y-4">
                     <p className="text-gray-600">
-                        Are you sure you want to delete <span className="font-bold text-gray-900">{deletingUser?.name} ({deletingUser?.email})</span>? 
+                        Are you sure you want to delete <span className="font-bold text-gray-900">{deletingUser?.name} ({deletingUser?.email})</span>?
                         This will deactivate their access to the system.
                     </p>
                     <div className="flex justify-end gap-3 pt-4">
-                        <Button 
-                            variant="outline" 
+                        <Button
+                            variant="outline"
                             onClick={() => setDeletingUser(null)}
                             disabled={isDeleting}
                         >
                             Cancel
                         </Button>
-                        <Button 
+                        <Button
                             variant="danger"
                             onClick={handleDeleteUser}
                             loading={isDeleting}

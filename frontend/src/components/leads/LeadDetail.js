@@ -9,10 +9,11 @@ import {
     HiIdentification, HiChartBar, HiDownload
 } from "react-icons/hi";
 import { toast } from "react-hot-toast";
-import Cookies from "js-cookie";
+import { useAuth } from "@/src/contexts/AuthContext";
 import { formatNumber } from "@/src/utils/formatters";
 
 export default function LeadDetail({ lead: initialLead, onLeadDeleted }) {
+    const { user } = useAuth();
     const [lead, setLead] = useState(initialLead);
     const [loadingActivities, setLoadingActivities] = useState(true);
     const [newNote, setNewNote] = useState("");
@@ -22,14 +23,6 @@ export default function LeadDetail({ lead: initialLead, onLeadDeleted }) {
     const [isDeletingDoc, setIsDeletingDoc] = useState(false);
     const [deletingLead, setDeletingLead] = useState(false);
     const [isDeletingLead, setIsDeletingLead] = useState(false);
-    const [user, setUser] = useState(null);
-
-    useEffect(() => {
-        const userData = Cookies.get("user");
-        if (userData) {
-            setUser(JSON.parse(userData));
-        }
-    }, []);
 
     const fetchFullDetails = async () => {
         if (!initialLead?.id) return;
