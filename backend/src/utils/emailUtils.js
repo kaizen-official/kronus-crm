@@ -3,6 +3,11 @@ const nodemailer = require('nodemailer');
 /**
  * Create email transporter
  */
+const emailQueueService = require('../services/emailQueueService');
+
+/**
+ * Create email transporter
+ */
 const createTransporter = () => {
   const config = {
     auth: {
@@ -24,10 +29,10 @@ const createTransporter = () => {
 };
 
 /**
- * Send email
+ * Internal function to actually perform the sending
  * @param {object} options - Email options
  */
-const sendEmail = async (options) => {
+const performSendEmail = async (options) => {
   const transporter = createTransporter();
 
   const message = {
@@ -38,14 +43,21 @@ const sendEmail = async (options) => {
     text: options.text,
   };
 
-  try {
-    const info = await transporter.sendMail(message);
-    console.log('Email sent:', info.messageId);
-    return info;
-  } catch (error) {
-    console.error('Email error:', error);
-    throw new Error('Email could not be sent');
-  }
+  const info = await transporter.sendMail(message);
+  return info;
+};
+
+// Register the worker function with the queue
+emailQueueService.registerSendFunction(performSendEmail);
+
+/**
+ * Queue email for sending
+ * @param {object} options - Email options
+ */
+const sendEmail = async (options) => {
+  // Add to queue and return immediately (async)
+  await emailQueueService.add(options);
+  return { queued: true };
 };
 
 /**
