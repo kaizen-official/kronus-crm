@@ -30,6 +30,7 @@ module.exports = {
     MAGICBRICKS: 'MAGICBRICKS',
     OLX: 'OLX',
     COLD_OUTREACH: 'COLD_OUTREACH',
+    WALK_IN: 'WALK_IN',
   },
   
   PRIORITY: {

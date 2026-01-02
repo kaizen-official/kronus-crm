@@ -99,6 +99,7 @@ enum LeadSource {
   MAGICBRICKS
   OLX
   COLD_OUTREACH
+  WALK_IN
 }
 
 enum LeadStatus {

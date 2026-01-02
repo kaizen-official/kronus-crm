@@ -179,6 +179,7 @@ export default function LeadForm({ initialData, onSubmit, loading }) {
               { label: "MagicBricks", value: "MAGICBRICKS" },
               { label: "OLX", value: "OLX" },
               { label: "Cold Outreach", value: "COLD_OUTREACH" },
+              { label: "Walk In", value: "WALK_IN" },
             ]}
             error={errors.source?.message}
             {...register("source")}

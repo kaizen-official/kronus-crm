@@ -13,9 +13,13 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const leadRoutes = require('./routes/leadRoutes');
 const externalRoutes = require('./routes/externalRoutes');
+const { initCronJobs } = require('./services/cronService');
 
 // Initialize express app
 const app = express();
+
+// Start cron jobs
+initCronJobs();
 
 // Trust proxy (important for rate limiting behind reverse proxy)
 app.set('trust proxy', 1);

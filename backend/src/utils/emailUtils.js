@@ -179,9 +179,47 @@ const sendLeadAssignmentEmail = async (userEmail, userName, leadName, leadId) =>
   });
 };
 
+/**
+ * Send follow-up reminder email to agent
+ */
+const sendFollowUpReminderEmail = async (agentEmail, agentName, leads, timeContext) => {
+  const leadsHtml = leads.map(lead => `
+    <div style="border-left: 4px solid #4f46e5; padding: 12px; margin-bottom: 12px; background: #f8fafc;">
+      <p style="margin: 0; font-weight: 700; color: #1e293b;">${lead.name}</p>
+      <p style="margin: 4px 0 0 0; font-size: 14px; color: #64748b;">Property: ${lead.property || 'Not specified'}</p>
+      <p style="margin: 4px 0 0 0; font-size: 14px; color: #64748b;">Phone: ${lead.phone}</p>
+    </div>
+  `).join('');
+
+  const content = `
+    <div class="badge" style="background: #e0e7ff; color: #4338ca;">Follow-up Reminder</div>
+    <h1>${timeContext === 'tomorrow' ? "Tomorrow's" : "Today's"} Follow-up Schedule</h1>
+    <p>Hi ${agentName},</p>
+    <p>You have <strong>${leads.length}</strong> ${leads.length === 1 ? 'lead' : 'leads'} scheduled for follow-up ${timeContext}. Here are the details:</p>
+    
+    <div style="margin: 24px 0;">
+      ${leadsHtml}
+    </div>
+
+    <div style="text-align: center;">
+      <a href="${process.env.FRONTEND_URL}/leads" class="button">Open CRM Dashboard</a>
+    </div>
+    
+    <p>Proactive follow-up is the key to conversion. Have a productive day!</p>
+  `;
+
+  await sendEmail({
+    email: agentEmail,
+    subject: `Follow-up Reminder: ${leads.length} leads for ${timeContext}`,
+    html: baseTemplate(content),
+    text: `Hi ${agentName}, you have ${leads.length} follow-ups scheduled for ${timeContext}. Check your CRM dashboard for details.`,
+  });
+};
+
 module.exports = {
   sendEmail,
   sendPasswordResetEmail,
   sendWelcomeEmail,
   sendLeadAssignmentEmail,
+  sendFollowUpReminderEmail,
 };

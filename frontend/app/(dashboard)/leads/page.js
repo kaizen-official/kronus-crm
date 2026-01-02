@@ -47,6 +47,10 @@ export default function LeadsPage() {
     const [closingLead, setClosingLead] = useState(null);
     const [closeReason, setCloseReason] = useState("");
     const [editingLead, setEditingLead] = useState(null);
+    const [isClosing, setIsClosing] = useState(false);
+    const [isReopening, setIsReopening] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
+    const [isUpdating, setIsUpdating] = useState(false);
 
     // ... (existing handlers)
 
@@ -55,6 +59,7 @@ export default function LeadsPage() {
 
     const handleCloseLead = async (status) => {
         if (!closingLead) return;
+        setIsClosing(true);
         try {
             await api.put(`/leads/${closingLead.id}`, {
                 status,
@@ -67,6 +72,8 @@ export default function LeadsPage() {
         } catch (error) {
             console.error("Failed to close lead", error);
             toast.error(error.response?.data?.message || "Failed to close lead");
+        } finally {
+            setIsClosing(false);
         }
     };
 
@@ -77,6 +84,7 @@ export default function LeadsPage() {
 
     const confirmReopenLead = async () => {
         if (!reopeningLead || !reopenReason.trim()) return;
+        setIsReopening(true);
         try {
             await api.put(`/leads/${reopeningLead.id}`, {
                 status: "NEW", // Default to NEW when reopening
@@ -89,6 +97,8 @@ export default function LeadsPage() {
         } catch (error) {
             console.error("Failed to reopen lead", error);
             toast.error(error.response?.data?.message || "Failed to reopen lead");
+        } finally {
+            setIsReopening(false);
         }
     };
 
@@ -134,6 +144,7 @@ export default function LeadsPage() {
     };
 
     const handleCreate = async (data) => {
+        setIsCreating(true);
         try {
             await api.post("/leads", data);
             setIsCreateOpen(false);
@@ -142,10 +153,13 @@ export default function LeadsPage() {
         } catch (error) {
             console.error("Create failed", error);
             toast.error(error.response?.data?.message || "Failed to create lead");
+        } finally {
+            setIsCreating(false);
         }
     };
 
     const handleUpdate = async (data) => {
+        setIsUpdating(true);
         try {
             await api.put(`/leads/${editingLead.id}`, data);
             setEditingLead(null);
@@ -154,6 +168,8 @@ export default function LeadsPage() {
         } catch (error) {
             console.error("Update failed", error);
             toast.error(error.response?.data?.message || "Failed to update lead");
+        } finally {
+            setIsUpdating(false);
         }
     };
 
@@ -377,7 +393,7 @@ export default function LeadsPage() {
                 onClose={() => setIsCreateOpen(false)}
                 title="Create New Lead"
             >
-                <LeadForm onSubmit={handleCreate} loading={loading} />
+                <LeadForm onSubmit={handleCreate} loading={isCreating} />
             </Modal>
 
             {/* Edit Lead Modal */}
@@ -390,7 +406,7 @@ export default function LeadsPage() {
                     <LeadForm
                         initialData={editingLead}
                         onSubmit={handleUpdate}
-                        loading={loading}
+                        loading={isUpdating}
                     />
                 )}
             </Modal>
@@ -456,14 +472,16 @@ export default function LeadsPage() {
                         <Button
                             className="bg-red-500 text-white hover:bg-red-700 border-red-700"
                             onClick={() => handleCloseLead('LOST')}
+                            disabled={isClosing}
                         >
-                            Mark as LOST
+                            {isClosing ? "Processing..." : "Mark as LOST"}
                         </Button>
                         <Button
                             className="bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
                             onClick={() => handleCloseLead('WON')}
+                            disabled={isClosing}
                         >
-                            Mark as WON
+                            {isClosing ? "Processing..." : "Mark as WON"}
                         </Button>
                     </div>
                 </div>
@@ -494,236 +512,21 @@ export default function LeadsPage() {
                     </div>
 
                     <div className="flex gap-3 justify-end pt-2">
-                        <Button variant="outline" onClick={() => setReopeningLead(null)}>
+                        <Button variant="outline" onClick={() => setReopeningLead(null)} disabled={isReopening}>
                             Cancel
                         </Button>
                         <Button
                             className="bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                             onClick={confirmReopenLead}
-                            disabled={!reopenReason.trim()}
+                            disabled={!reopenReason.trim() || isReopening}
                         >
-                            Confirm Reopen
+                            {isReopening ? "Reopening..." : "Confirm Reopen"}
                         </Button>
                     </div>
                 </div>
             </Modal>
         </div>
     );
-
-    // return (
-    //     <div>
-    //         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-    //             <div>
-    //                 <Heading level={2}>Leads</Heading>
-    //                 <p className="text-gray-600">Manage your sales pipeline</p>
-    //             </div>
-    //             <div>
-    //                 <Button icon={<HiPlus />} onClick={() => setIsCreateOpen(true)}>Add New Lead</Button>
-    //             </div>
-    //         </div>
-
-    //         {/* Filters */}
-    //         <div className="flex flex-col md:flex-row gap-4 mb-6">
-    //             <div className="w-full md:w-1/3 relative">
-    //                 <HiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-    //                 <Input
-    //                     placeholder="Search leads..."
-    //                     className="pl-10 py-2.5!"
-    //                     value={searchTerm}
-    //                     onChange={(e) => setSearchTerm(e.target.value)}
-    //                 />
-    //             </div>
-    //             <div className="w-full md:w-1/4">
-    //                 <Select
-    //                     placeholder="Filter by Status"
-    //                     className="py-2.5!"
-    //                     options={[
-    //                         { label: "New", value: "NEW" },
-    //                         { label: "Contacted", value: "CONTACTED" },
-    //                         { label: "Qualified", value: "QUALIFIED" },
-    //                         { label: "Proposal", value: "PROPOSAL" },
-    //                         { label: "Won", value: "WON" },
-    //                         { label: "Lost", value: "LOST" },
-    //                     ]}
-    //                     value={statusFilter}
-    //                     onChange={(e) => setStatusFilter(e.target.value)}
-    //                 />
-    //             </div>
-    //         </div>
-
-    //         {/* Table */}
-    //         <Card className="overflow-hidden p-0 border border-gray-200 shadow-sm relative min-h-[400px]">
-    //             <div className="overflow-x-auto">
-    //                 <table className="w-full text-left border-collapse min-w-[800px]">
-    //                     <thead>
-    //                         <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase text-gray-500 font-semibold tracking-wider">
-    //                             <th className="px-4 py-4 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('firstName')}>
-    //                                 Name <SortIcon field="firstName" />
-    //                             </th>
-    //                             <th className="px-4 py-4 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('property')}>
-    //                                 Property <SortIcon field="property" />
-    //                             </th>
-    //                             <th className="px-4 py-4 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('source')}>
-    //                                 Source <SortIcon field="source" />
-    //                             </th>
-    //                             <th className="px-4 py-4 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('status')}>
-    //                                 Status <SortIcon field="status" />
-    //                             </th>
-    //                             <th className="px-4 py-4 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('estimatedValue')}>
-    //                                 Value <SortIcon field="estimatedValue" />
-    //                             </th>
-    //                             <th className="px-4 py-4">Assigned To</th>
-    //                             <th className="px-4 py-4 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('createdAt')}>
-    //                                 Created On <SortIcon field="createdAt" />
-    //                             </th>
-    //                             <th className="px-4 py-4 text-right">Actions</th>
-    //                         </tr>
-    //                     </thead>
-    //                     <tbody className="divide-y divide-gray-100">
-    //                         {/* Loading Overlay */}
-    //                         <AnimatePresence>
-    //                             {loading && (
-    //                                 <motion.tr
-    //                                     initial={{ opacity: 0 }}
-    //                                     animate={{ opacity: 1 }}
-    //                                     exit={{ opacity: 0 }}
-    //                                     className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-10 flex items-center justify-center"
-    //                                 >
-    //                                     <td colSpan="6" className="w-full h-full flex items-center justify-center">
-    //                                         <div className="w-6 h-6 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
-    //                                     </td>
-    //                                 </motion.tr>
-    //                             )}
-    //                         </AnimatePresence>
-
-    //                         {!loading && leads.length === 0 ? (
-    //                             <tr>
-    //                                 <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
-    //                                     <div className="flex flex-col items-center gap-2">
-    //                                         <HiSearch size={24} className="text-gray-300" />
-    //                                         <p>No leads found matching your criteria.</p>
-    //                                     </div>
-    //                                 </td>
-    //                             </tr>
-    //                         ) : (
-    //                             leads.map((lead) => (
-    //                                 <motion.tr
-    //                                     key={lead.id}
-    //                                     layoutId={lead.id}
-    //                                     initial={{ opacity: 0 }}
-    //                                     animate={{ opacity: 1 }}
-    //                                     className="hover:bg-gray-50/50 transition-colors cursor-pointer"
-    //                                     onClick={() => setSelectedLead(lead)}
-    //                                 >
-    //                                     <td className="px-4 py-4 font-medium text-gray-900">
-    //                                         {lead.firstName} {lead.lastName}
-    //                                     </td>
-    //                                     <td className="px-4 py-4 text-gray-600">{lead.property || "-"}</td>
-    //                                     <td className="px-4 py-4 text-gray-600">{lead.source || "-"}</td>
-    //                                     <td className="px-4 py-4">
-    //                                         <StatusBadge status={lead.status} />
-    //                                     </td>
-    //                                     <td className="px-4 py-4 font-semibold text-red-500">
-    //                                         ₹{(lead.estimatedValue || 0).toLocaleString()}
-    //                                     </td>
-    //                                     <td className="px-4 py-4 text-sm text-gray-600">
-    //                                         {lead.assignedTo ? `${lead.assignedTo.firstName} ${lead.assignedTo.lastName}` : <span className="text-gray-400 italic">Unassigned</span>}
-    //                                     </td>
-    //                                     <td className="px-4 py-4 text-sm text-gray-600">
-    //                                         {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : "-"}
-    //                                     </td>
-    //                                     <td className="px-4 py-4 text-right">
-    //                                         <Button
-    //                                             variant="primary"
-    //                                             size="sm"
-    //                                             onClick={(e) => {
-    //                                                 e.stopPropagation();
-    //                                                 setEditingLead(lead);
-    //                                             }}
-    //                                         >
-    //                                             Edit
-    //                                         </Button>
-    //                                     </td>
-    //                                 </motion.tr>
-    //                             ))
-    //                         )}
-    //                     </tbody>
-    //                 </table>
-    //             </div>
-
-    //             {/* Pagination */}
-    //             <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 text-sm text-gray-500 flex flex-col sm:flex-row gap-4 justify-between items-center">
-    //                 <span>
-    //                     Page {stats.currentPage || 1} of {Math.max(1, totalPages)} <span className="text-gray-400 mx-1">|</span> {stats.totalItems || 0} items
-    //                 </span>
-    //                 <div className="flex gap-2">
-    //                     <Button
-    //                         variant="outline"
-    //                         size="sm"
-    //                         disabled={page === 1 || loading}
-    //                         onClick={() => setPage(p => Math.max(1, p - 1))}
-    //                     >
-    //                         <HiChevronLeft /> Previous
-    //                     </Button>
-    //                     <Button
-    //                         variant="outline"
-    //                         size="sm"
-    //                         disabled={page === totalPages || loading}
-    //                         onClick={() => setPage(p => Math.min(totalPages || 1, p + 1))}
-    //                     >
-    //                         Next <HiChevronRight />
-    //                     </Button>
-    //                 </div>
-    //             </div>
-    //         </Card>
-
-    //         {/* Create Lead Modal */}
-    //         <Modal
-    //             isOpen={isCreateOpen}
-    //             onClose={() => setIsCreateOpen(false)}
-    //             title="Create New Lead"
-    //         >
-    //             <LeadForm onSubmit={handleCreate} loading={loading} />
-    //         </Modal>
-
-    //         {/* Edit Lead Modal */}
-    //         <Modal
-    //             isOpen={!!editingLead}
-    //             onClose={() => setEditingLead(null)}
-    //             title="Edit Lead"
-    //         >
-    //             {editingLead && (
-    //                 <LeadForm
-    //                     initialData={editingLead}
-    //                     onSubmit={handleUpdate}
-    //                     loading={loading}
-    //                 />
-    //             )}
-    //         </Modal>
-
-    //         {/* Detail View Modal */}
-    //         <Modal
-    //             isOpen={!!selectedLead}
-    //             onClose={() => setSelectedLead(null)}
-    //             title="Lead Details"
-    //             size="lg"
-    //         >
-    //             <LeadDetail lead={selectedLead} />
-    //             <div className="mt-8 pt-6 border-t border-gray-100 flex justify-end">
-    //                 <Button variant="outline" onClick={() => setSelectedLead(null)}>Close</Button>
-    //                 <Button
-    //                     className="ml-3"
-    //                     onClick={() => {
-    //                         setEditingLead(selectedLead);
-    //                         setSelectedLead(null);
-    //                     }}
-    //                 >
-    //                     Edit Lead
-    //                 </Button>
-    //             </div>
-    //         </Modal>
-    //     </div>
-    // );
 }
 
 function StatusBadge({ status }) {
