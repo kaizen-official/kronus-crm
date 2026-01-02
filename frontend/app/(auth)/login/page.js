@@ -109,12 +109,6 @@ export default function Login() {
                             </Button>
                         </form>
 
-                        <div className="mt-8 text-center text-sm text-gray-600">
-                            Don&apos;t have an account?{" "}
-                            <Link href="/register" className="text-brand-primary font-bold hover:underline">
-                                Create Account
-                            </Link>
-                        </div>
                     </Card>
                 </motion.div>
             </div>

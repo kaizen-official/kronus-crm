@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {
-  register,
+  // register,
   login,
   getMe,
   forgotPassword,
@@ -13,7 +13,7 @@ const { protect } = require('../middleware/auth');
 const { authLimiter } = require('../middleware/security');
 const validate = require('../middleware/validate');
 const {
-  registerValidation,
+  // registerValidation,
   loginValidation,
   forgotPasswordValidation,
   resetPasswordValidation,
@@ -21,7 +21,7 @@ const {
 } = require('../utils/validationRules');
 
 // Public routes with rate limiting
-router.post('/register', authLimiter, registerValidation, validate, register);
+// router.post('/register', authLimiter, registerValidation, validate, register);
 router.post('/login', authLimiter, loginValidation, validate, login);
 router.post('/forgot-password', authLimiter, forgotPasswordValidation, validate, forgotPassword);
 router.put('/reset-password/:token', authLimiter, resetPasswordValidation, validate, resetPassword);

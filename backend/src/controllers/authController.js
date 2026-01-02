@@ -10,63 +10,63 @@ const { sendPasswordResetEmail } = require('../utils/emailUtils');
  * @route   POST /api/auth/register
  * @access  Public
  */
-const register = async (req, res, next) => {
-  try {
-    const { email, password, name, phone } = req.body;
+// const register = async (req, res, next) => {
+//   try {
+//     const { email, password, name, phone } = req.body;
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
+//     // Check if user already exists
+//     const existingUser = await prisma.user.findUnique({
+//       where: { email },
+//     });
 
-    if (existingUser) {
-      return res.status(HTTP_STATUS.CONFLICT).json({
-        success: false,
-        message: 'User with this email already exists',
-      });
-    }
+//     if (existingUser) {
+//       return res.status(HTTP_STATUS.CONFLICT).json({
+//         success: false,
+//         message: 'User with this email already exists',
+//       });
+//     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(parseInt(process.env.BCRYPT_ROUNDS) || 12);
-    const hashedPassword = await bcrypt.hash(password, salt);
+//     // Hash password
+//     const salt = await bcrypt.genSalt(parseInt(process.env.BCRYPT_ROUNDS) || 12);
+//     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        name,
-        phone: phone || null,
-        roles: [ROLES.SALESMAN],
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        phone: true,
-        roles: true,
-        isActive: true,
-        createdAt: true,
-      },
-    });
+//     // Create user
+//     const user = await prisma.user.create({
+//       data: {
+//         email,
+//         password: hashedPassword,
+//         name,
+//         phone: phone || null,
+//         roles: [ROLES.SALESMAN],
+//       },
+//       select: {
+//         id: true,
+//         email: true,
+//         name: true,
+//         phone: true,
+//         roles: true,
+//         isActive: true,
+//         createdAt: true,
+//       },
+//     });
 
-    // Generate tokens
-    const token = generateToken(user.id);
-    const refreshToken = generateRefreshToken(user.id);
+//     // Generate tokens
+//     const token = generateToken(user.id);
+//     const refreshToken = generateRefreshToken(user.id);
 
-    res.status(HTTP_STATUS.CREATED).json({
-      success: true,
-      message: 'User registered successfully',
-      data: {
-        user,
-        token,
-        refreshToken,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+//     res.status(HTTP_STATUS.CREATED).json({
+//       success: true,
+//       message: 'User registered successfully',
+//       data: {
+//         user,
+//         token,
+//         refreshToken,
+//       },
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
 /**
  * @desc    Login user
@@ -349,7 +349,7 @@ const logout = async (req, res, next) => {
 };
 
 module.exports = {
-  register,
+  // register,
   login,
   getMe,
   forgotPassword,

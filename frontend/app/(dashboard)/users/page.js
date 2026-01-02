@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
-import { HiPlus, HiSearch, HiChevronLeft, HiChevronRight } from "react-icons/hi";
+import { HiPlus, HiSearch, HiChevronLeft, HiChevronRight, HiTrash } from "react-icons/hi";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "@/src/services/api";
 import Heading from "@/src/components/ui/Heading";
@@ -40,6 +40,8 @@ export default function UsersPage() {
     // Modals
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
+    const [deletingUser, setDeletingUser] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Reset page on filter change
     useEffect(() => {
@@ -112,6 +114,21 @@ export default function UsersPage() {
         } catch (error) {
             console.error("Update failed", error);
             alert(error.response?.data?.message || "Failed to update user");
+        }
+    };
+    
+    const handleDeleteUser = async () => {
+        if (!deletingUser) return;
+        setIsDeleting(true);
+        try {
+            await api.delete(`/users/${deletingUser.id}`);
+            setDeletingUser(null);
+            window.location.reload();
+        } catch (error) {
+            console.error("Delete failed", error);
+            alert(error.response?.data?.message || "Failed to delete user");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -222,13 +239,23 @@ export default function UsersPage() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => setEditingUser(user)}
-                                            >
-                                                Edit
-                                            </Button>
+                                            <div className="flex justify-end gap-2">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => setEditingUser(user)}
+                                                >
+                                                    Edit
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                    onClick={() => setDeletingUser(user)}
+                                                >
+                                                    <HiTrash size={18} />
+                                                </Button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -277,6 +304,35 @@ export default function UsersPage() {
                         loading={loading}
                     />
                 )}
+            </Modal>
+            {/* Deletion Confirmation Modal */}
+            <Modal
+                isOpen={!!deletingUser}
+                onClose={() => setDeletingUser(null)}
+                title="Delete User"
+            >
+                <div className="space-y-4">
+                    <p className="text-gray-600">
+                        Are you sure you want to delete <span className="font-bold text-gray-900">{deletingUser?.name} ({deletingUser?.email})</span>? 
+                        This will deactivate their access to the system.
+                    </p>
+                    <div className="flex justify-end gap-3 pt-4">
+                        <Button 
+                            variant="outline" 
+                            onClick={() => setDeletingUser(null)}
+                            disabled={isDeleting}
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            variant="danger"
+                            onClick={handleDeleteUser}
+                            loading={isDeleting}
+                        >
+                            Confirm Delete
+                        </Button>
+                    </div>
+                </div>
             </Modal>
         </div>
     );
