@@ -7,7 +7,7 @@ const { sendFollowUpReminderEmail } = require('../utils/emailUtils');
  */
 const initCronJobs = () => {
   // 1. Every day at 3 PM (15:00): Remind about tomorrow's follow-ups
-  cron.schedule('10 18 * * *', async () => {
+  cron.schedule('0 15 * * *', async () => {
     console.log('Running 3 PM Cron: Fetching tomorrow\'s follow-ups...');
     await processFollowUpReminders('tomorrow');
   }, {
